@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b25">
+  <title>Control de asistencia | Colegio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/school-brand.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="#inicio" aria-label="Inicio">
+        <span class="brand-mark" id="schoolLogoMark" aria-hidden="true">C</span>
+        <span class="brand-copy"><strong id="nombreColegio">Mi Colegio</strong><small id="schoolMotto">CONTROL DE ASISTENCIA</small></span>
+      </a>
+      <div class="clock-block"><span id="fecha">Cargando fecha…</span><strong id="hora">--:--:--</strong></div>
+    </header>
+
+    <main id="inicio" class="main-content">
+      <section class="intro" aria-labelledby="titulo">
+        <span class="eyebrow"><span class="live-dot"></span> REGISTRO DE INGRESO</span>
+        <h1 id="titulo">Tu día comienza <span>con un registro.</span></h1>
+        <p>Escribe tu código de estudiante para registrar tu asistencia.</p>
+      </section>
+
+      <section class="checkin-card" aria-label="Registro de asistencia">
+        <form id="formulario" class="checkin-form" autocomplete="off">
+          <label for="codigo">Código de estudiante</label>
+          <div class="input-row">
+            <span class="hash" aria-hidden="true">#</span>
+            <input id="codigo" name="codigo" type="text" maxlength="30" placeholder="Escribe tu código aquí" required autofocus>
+            <button id="btnIngresar" type="submit"><span>Registrar ingreso</span><span aria-hidden="true">→</span></button>
+          </div>
+          <p class="form-hint">Presiona <kbd>Enter ↵</kbd> para continuar</p>
+        </form>
+
+        <div id="mensaje" class="message" role="status" aria-live="polite" hidden></div>
+
+        <article id="tarjetaEstudiante" class="student-card" hidden>
+          <div class="student-avatar" aria-hidden="true"><span id="iniciales">ES</span></div>
+          <div class="student-info">
+            <span class="student-label">ESTUDIANTE</span>
+            <h2 id="nombreEstudiante">—</h2>
+            <p id="aulaEstudiante">—</p>
+          </div>
+          <div id="estadoPill" class="status-pill"><span class="status-icon">✓</span><span id="estadoTexto">PRESENTE</span></div>
+          <div class="student-time"><span>HORA DE REGISTRO</span><strong id="horaRegistro">--:--</strong></div>
+        </article>
+
+        <div class="privacy-note"><span aria-hidden="true">✳</span> Tus datos se usan únicamente para el control de asistencia.</div>
+      </section>
+
+      <section class="steps" aria-label="Cómo registrar tu asistencia">
+        <div><span class="step-number">01</span><p>Escribe tu código</p></div><span class="step-line"></span>
+        <div><span class="step-number">02</span><p>Presiona Enter</p></div><span class="step-line"></span>
+        <div><span class="step-number">03</span><p>¡Listo, asistencia registrada!</p></div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>Un espacio para aprender y crecer.</span><span class="footer-actions"><a href="pages/admin/login.html">Acceso administrativo</a><span>© <span id="anio"></span> <span id="nombreColegioFooter">Mi Colegio</span></span></span></footer>
+  </div>
+</body>
+</html>

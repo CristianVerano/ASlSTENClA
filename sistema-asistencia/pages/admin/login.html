@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b25">
+  <title>Acceso administrativo | Mi Colegio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="../../css/admin.css">
+  <link rel="stylesheet" href="../../css/theme.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase-config.js"></script>
+  <script src="../../js/school-brand.js" defer></script>
+  <script src="../../js/admin-auth.js" defer></script>
+  <script src="../../js/admin-login.js" defer></script>
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <header class="topbar admin-topbar">
+      <a class="brand" href="../../index.html" aria-label="Volver al registro de asistencia">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span class="brand-copy"><strong id="nombreColegio">Mi Colegio</strong><small>ÁREA ADMINISTRATIVA</small></span>
+      </a>
+      <a class="back-link" href="../../index.html">← Volver al registro</a>
+    </header>
+    <main class="login-main">
+      <section class="login-aside">
+        <span class="eyebrow"><span class="live-dot"></span> GESTIÓN ESCOLAR</span>
+        <h1>Todo en orden.<br><span>Todo bajo control.</span></h1>
+        <p>Ingresa al espacio de administración para gestionar la información de tu institución.</p>
+        <div class="aside-note"><span class="aside-icon">✳</span><span>Acceso seguro para personal autorizado</span></div>
+      </section>
+      <section class="login-card" aria-labelledby="loginTitle">
+        <div class="login-card-heading">
+          <span class="login-symbol" aria-hidden="true">↗</span>
+          <div><h2 id="loginTitle">Bienvenido de nuevo</h2><p>Ingresa con tu cuenta institucional.</p></div>
+        </div>
+        <form id="loginForm" class="login-form">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" autocomplete="username" placeholder="nombre@colegio.edu.pe" required>
+          <div class="password-label"><label for="password">Contraseña</label><button id="togglePassword" class="text-button" type="button" aria-pressed="false">Mostrar</button></div>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Escribe tu contraseña" required>
+          <div id="loginMessage" class="message" role="alert" aria-live="polite" hidden></div>
+          <button id="loginButton" class="login-button" type="submit"><span>Iniciar sesión</span><span aria-hidden="true">→</span></button>
+        </form>
+        <p class="login-help">¿No tienes acceso? Solicítalo al administrador de tu institución.</p>
+      </section>
+    </main>
+    <footer class="footer"><span>Acceso exclusivo para personal autorizado.</span><span><a href="../../index.html">Sistema de asistencia</a></span></footer>
+  </div>
+</body>
+</html>
