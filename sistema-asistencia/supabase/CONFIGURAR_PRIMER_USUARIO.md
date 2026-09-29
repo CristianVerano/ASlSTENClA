@@ -27,6 +27,6 @@ El proyecto ya tiene activo el rol `DIRECTOR` con `id_rol = 1`. También existen
 
 Luego abre `pages/admin/login.html`, inicia sesión con el correo y contraseña creados, y el panel validará el perfil y el rol antes de mostrar el dashboard. Cuando la cuenta del director ya funcione, las invitaciones de personal y los cambios de rol se hacen desde **Usuarios y roles**.
 
-Para invitar personal, el proveedor de correo de Supabase Auth debe estar habilitado y tener configurada la URL de retorno del sitio. La función de invitación verifica el JWT y el perfil DIRECTOR en cada solicitud; la clave de servicio permanece en el servidor Supabase.
+Para invitar personal, el proveedor de correo de Supabase Auth debe estar habilitado y tener configurada la URL de retorno del sitio. En **Authentication → URL Configuration → Redirect URLs**, agrega `https://tu-dominio-vercel.vercel.app/**` y reemplaza el ejemplo por el dominio real de Vercel. Los enlaces abren `pages/admin/accept-invite.html`, donde el usuario crea su contraseña. En el inicio de sesión, cada usuario puede solicitar un enlace para restablecerla. La función de invitación verifica el JWT y el perfil DIRECTOR en cada solicitud; la clave de servicio permanece en el servidor Supabase.
 
 No agregues una clave `service_role` al frontend. La página usa la clave publishable/anon guardada en `js/supabase-config.js`.

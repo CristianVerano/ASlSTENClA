@@ -61,5 +61,19 @@
     event.currentTarget.setAttribute("aria-pressed", String(visible));
   });
 
+  document.querySelector("#forgotPassword").addEventListener("click", async () => {
+    if (!client) return showError("No se pudo iniciar la conexión. Revisa la configuración de Supabase.");
+    const email = document.querySelector("#email").value.trim();
+    if (!email) return showError("Escribe tu correo y luego selecciona ‘Olvidé mi contraseña’.");
+    const resetButton = document.querySelector("#forgotPassword"); resetButton.disabled = true;
+    try {
+      const redirectTo = new URL("/pages/admin/accept-invite.html", window.location.origin).href;
+      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      message.textContent = "Si ese correo tiene acceso, recibirás un enlace para cambiar la contraseña."; message.className = "message success"; message.hidden = false;
+    } catch (error) { console.error(error); showError("No se pudo enviar el enlace. Comprueba el correo e inténtalo nuevamente."); }
+    finally { resetButton.disabled = false; }
+  });
+
   checkExistingSession();
 })();

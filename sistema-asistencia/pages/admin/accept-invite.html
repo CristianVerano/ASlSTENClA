@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#287e68">
+  <title>Activar acceso | Mi Colegio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css"><link rel="stylesheet" href="../../css/admin.css"><link rel="stylesheet" href="../../css/theme.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../../js/supabase-config.js"></script><script src="../../js/admin-auth.js" defer></script><script src="../../js/accept-invite.js" defer></script>
+</head>
+<body class="admin-body"><div class="admin-shell"><header class="topbar admin-topbar"><a class="brand" href="../../index.html"><span class="brand-mark">C</span><span class="brand-copy"><strong id="nombreColegio">Mi Colegio</strong><small>ÁREA ADMINISTRATIVA</small></span></a><a class="back-link" href="login.html">← Ir a iniciar sesión</a></header>
+  <main class="login-main"><section class="login-aside"><span class="eyebrow"><span class="live-dot"></span> CUENTA INSTITUCIONAL</span><h1>Activa tu acceso.<br><span>Elige tu contraseña.</span></h1><p>Configura una contraseña personal para ingresar al panel de administración del colegio.</p></section>
+    <section class="login-card"><div class="login-card-heading"><span class="login-symbol">✓</span><div><h2>Crear contraseña</h2><p>Usa al menos 10 caracteres.</p></div></div><form id="acceptForm" class="login-form"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" minlength="10" required><label for="confirmPassword">Confirma la contraseña</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="10" required><div id="acceptMessage" class="message" role="status" aria-live="polite" hidden></div><button id="acceptButton" class="login-button" type="submit"><span>Guardar contraseña</span><span aria-hidden="true">→</span></button></form><p class="login-help">Si el enlace venció, solicita una nueva invitación al director.</p></section>
+  </main><footer class="footer"><span>Acceso exclusivo para personal autorizado.</span><span><a href="login.html">Iniciar sesión</a></span></footer></div></body></html>

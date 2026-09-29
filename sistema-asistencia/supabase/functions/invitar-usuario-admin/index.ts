@@ -49,7 +49,7 @@ Deno.serve(async (request: Request) => {
   if (body.action === "listar") {
     const { data: userList, error: listError } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listError) return json({ error: "No se pudo consultar la lista de cuentas." }, 500);
-    return json({ ok: true, emails: (userList.users || []).map((user) => ({ id: user.id, email: user.email || "" })) });
+    return json({ ok: true, emails: (userList.users || []).map((user) => ({ id: user.id, email: user.email || "", confirmado: Boolean(user.email_confirmed_at), ultimo_acceso: user.last_sign_in_at || null })) });
   }
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const nombres = typeof body.nombres === "string" ? body.nombres.trim() : "";
@@ -61,7 +61,18 @@ Deno.serve(async (request: Request) => {
   const { data: role, error: roleError } = await adminClient.from("roles").select("id_rol,nombre,activo").eq("id_rol", idRol).maybeSingle();
   if (roleError || !role?.activo) return json({ error: "El rol seleccionado no está disponible." }, 400);
 
+  const origin = request.headers.get("origin");
+  let redirectTo: string;
+  try {
+    const parsedOrigin = new URL(origin || "");
+    const localHttp = parsedOrigin.protocol === "http:" && (parsedOrigin.hostname === "localhost" || parsedOrigin.hostname === "127.0.0.1");
+    if (parsedOrigin.protocol !== "https:" && !localHttp) throw new Error("Origen no seguro");
+    redirectTo = new URL("/pages/admin/accept-invite.html", parsedOrigin.origin).href;
+  } catch {
+    return json({ error: "No se pudo determinar la dirección segura para aceptar la invitación." }, 400);
+  }
   const { data: invitation, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
+    redirectTo,
     data: { nombres, apellidos },
   });
   if (inviteError || !invitation.user) {

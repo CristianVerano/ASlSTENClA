@@ -4,9 +4,41 @@
   let students = [];
   let sections = [];
   let grades = [];
+  let weekRecords = [];
+  let holidayDates = new Set();
+  let workDays = [1, 2, 3, 4, 5];
+  let absenceTime = "08:30";
+  let historyRecords = [];
+  let summaryStudent = null;
 
   const byId = (id) => document.getElementById(id);
   function alertBox(element, text, type = "error") { element.textContent = text; element.className = `module-alert show ${type}`; }
+  function limaToday() { const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date()); const get = (name) => parts.find((part) => part.type === name)?.value; return `${get("year")}-${get("month")}-${get("day")}`; }
+  function addDays(iso, amount) { const date = new Date(`${iso}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + amount); return date.toISOString().slice(0, 10); }
+  function mondayOf(iso) { const dow = new Date(`${iso}T12:00:00Z`).getUTCDay(); return addDays(iso, dow === 0 ? -6 : 1 - dow); }
+  function datesOfWeek() { const start = byId("weekStart").value || mondayOf(limaToday()); return Array.from({ length: 7 }, (_, index) => addDays(start, index)); }
+  function weekAttendance(student, date) {
+    if (holidayDates.has(date) || !workDays.includes(new Date(`${date}T12:00:00Z`).getUTCDay())) return "SIN_CLASES";
+    const found = weekRecords.find((record) => record.id_estudiante === student.id_estudiante && record.fecha === date);
+    if (found) return found.estado;
+    const today = limaToday();
+    if (date > today) return "FUTURO";
+    if (date < today) return "FALTA_CALCULADA";
+    const time = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
+    return time >= absenceTime ? "FALTA_CALCULADA" : "PENDIENTE";
+  }
+  function summaryCounts(student) {
+    const states = datesOfWeek().map((date) => weekAttendance(student, date));
+    return { present: states.filter((state) => state === "PRESENTE").length, late: states.filter((state) => state === "TARDANZA").length, absence: states.filter((state) => state === "FALTA" || state === "FALTA_CALCULADA").length };
+  }
+  function matchesFilters(student) {
+    const query = byId("studentSearch").value.trim().toLocaleLowerCase("es"); const status = byId("statusFilter").value; const sectionFilter = byId("sectionFilter").value; const weekStatus = byId("weekStatusFilter").value;
+    const matchesQuery = `${student.codigo} ${student.nombres} ${student.apellidos} ${student.dni || ""}`.toLocaleLowerCase("es").includes(query);
+    const matchesStatus = status === "TODOS" || (status === "ACTIVOS" ? student.activo : !student.activo);
+    if (!matchesQuery || !matchesStatus || (sectionFilter && String(student.id_seccion) !== sectionFilter)) return false;
+    const counts = summaryCounts(student);
+    return weekStatus === "TODOS" || (weekStatus === "FALTAS" && counts.absence > 0) || (weekStatus === "TARDANZAS" && counts.late > 0) || (weekStatus === "COMPLETA" && counts.absence === 0 && counts.late === 0);
+  }
   function sectionTitle(section) {
     const grade = Array.isArray(section.grados) ? section.grados[0] : section.grados;
     return `${grade?.nombre || "Grado"} · ${section.nombre}`;
@@ -62,28 +94,46 @@
   }
   function renderRows() {
     const rows = byId("studentsRows");
-    const query = byId("studentSearch").value.trim().toLocaleLowerCase("es");
-    const status = byId("statusFilter").value;
-    const sectionFilter = byId("sectionFilter").value;
-    const filtered = students.filter((student) => {
-      const matchesQuery = `${student.codigo} ${student.nombres} ${student.apellidos} ${student.dni || ""}`.toLocaleLowerCase("es").includes(query);
-      const matchesStatus = status === "TODOS" || (status === "ACTIVOS" ? student.activo : !student.activo);
-      return matchesQuery && matchesStatus && (!sectionFilter || String(student.id_seccion) === sectionFilter);
-    });
+    const filtered = students.filter(matchesFilters);
     rows.replaceChildren();
     if (!filtered.length) {
       const row = document.createElement("tr"); const cell = document.createElement("td");
-      cell.colSpan = 6; cell.className = "empty-cell"; cell.textContent = "No hay estudiantes que coincidan con estos filtros."; row.append(cell); rows.append(row); return;
+      cell.colSpan = 7; cell.className = "empty-cell"; cell.textContent = "No hay estudiantes que coincidan con estos filtros."; row.append(cell); rows.append(row); renderWeeklyGrid(); return;
     }
     for (const student of filtered) {
       const tr = document.createElement("tr");
       const values = [student.codigo, `${student.apellidos}, ${student.nombres}`, student.dni || "—", sectionTitle(sections.find((section) => section.id_seccion === student.id_seccion) || {}), student.activo ? "Activo" : "Inactivo"];
       values.forEach((value, index) => { const td = document.createElement("td"); td.textContent = value; if (index === 1) td.className = "student-name-cell"; if (index === 4) { const pill = document.createElement("span"); pill.className = `table-status ${student.activo ? "presente" : "falta"}`; pill.textContent = value; td.replaceChildren(pill); } tr.append(td); });
+      const counts = summaryCounts(student); const summary = document.createElement("td"); summary.textContent = `${counts.present} presentes · ${counts.late} tardanzas · ${counts.absence} faltas`;
       const actions = document.createElement("td"); actions.className = "row-actions";
+      const detail = document.createElement("button"); detail.className = "row-action"; detail.type = "button"; detail.textContent = "Ver resumen"; detail.dataset.action = "summary"; detail.dataset.id = student.id_estudiante;
       const edit = document.createElement("button"); edit.className = "row-action"; edit.type = "button"; edit.textContent = "Editar"; edit.dataset.action = "edit"; edit.dataset.id = student.id_estudiante;
       const active = document.createElement("button"); active.className = `row-action${student.activo ? " danger" : ""}`; active.type = "button"; active.textContent = student.activo ? "Desactivar" : "Activar"; active.dataset.action = "toggle"; active.dataset.id = student.id_estudiante;
-      actions.append(edit, active); tr.append(actions); rows.append(tr);
+      actions.append(detail, edit, active); tr.append(summary, actions); rows.append(tr);
     }
+    renderWeeklyGrid(filtered);
+  }
+  function renderWeeklyGrid(filtered = students.filter(matchesFilters)) {
+    const container = byId("weeklyGrid"); const dates = datesOfWeek(); container.replaceChildren();
+    if (!filtered.length) { const empty = document.createElement("p"); empty.className = "empty-cell"; empty.textContent = "No hay estudiantes con estos filtros."; container.append(empty); return; }
+    const table = document.createElement("table"); table.className = "module-table attendance-matrix";
+    const head = document.createElement("thead"); const headerRow = document.createElement("tr");
+    ["ESTUDIANTE", ...dates.map((date) => `${new Intl.DateTimeFormat("es-PE", { weekday: "short", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`)).replace(".", "")} ${date.slice(8)}`)].forEach((text) => { const th = document.createElement("th"); th.textContent = text; headerRow.append(th); }); head.append(headerRow); table.append(head);
+    const body = document.createElement("tbody");
+    filtered.forEach((student) => { const row = document.createElement("tr"); const name = document.createElement("td"); name.className = "matrix-student"; name.textContent = `${student.apellidos}, ${student.nombres}`; row.append(name); dates.forEach((date) => { const td = document.createElement("td"); const state = weekAttendance(student, date); const mark = document.createElement("span"); mark.className = `attendance-mark ${state.toLowerCase()}`; const labels = { PRESENTE: "P", TARDANZA: "T", FALTA: "F", FALTA_CALCULADA: "F", SIN_CLASES: "—", PENDIENTE: "…", FUTURO: "·" }; mark.textContent = labels[state]; mark.title = `${date}: ${state === "FALTA_CALCULADA" ? "Falta (sin registro al cierre)" : state.replaceAll("_", " ")}`; mark.setAttribute("aria-label", mark.title); td.append(mark); row.append(td); }); body.append(row); });
+    table.append(body); container.append(table);
+  }
+  async function loadWeekData() {
+    if (!byId("weekStart").value) byId("weekStart").value = mondayOf(limaToday());
+    const dates = datesOfWeek(); const start = dates[0]; const end = dates[6];
+    const [attendance, holidays, schedule] = await Promise.all([
+      app.client.from("asistencias").select("id_estudiante,fecha,estado").gte("fecha", start).lte("fecha", end).limit(10000),
+      app.client.from("dias_no_laborables").select("fecha").eq("activo", true).gte("fecha", start).lte("fecha", end),
+      app.client.from("configuracion_asistencia").select("dias_laborables,hora_falta").eq("activo", true).order("id_configuracion").limit(1).maybeSingle()
+    ]);
+    const error = attendance.error || holidays.error || schedule.error; if (error) throw error;
+    weekRecords = attendance.data || []; holidayDates = new Set((holidays.data || []).map((item) => item.fecha));
+    workDays = schedule.data?.dias_laborables || [1, 2, 3, 4, 5]; absenceTime = schedule.data?.hora_falta?.slice(0, 5) || "08:30";
   }
   async function loadData() {
     const [studentResult, sectionResult, gradeResult] = await Promise.all([
@@ -94,7 +144,7 @@
     const error = studentResult.error || sectionResult.error || gradeResult.error;
     if (error) throw error;
     students = studentResult.data || []; sections = sectionResult.data || []; grades = gradeResult.data || [];
-    fillSections(); refreshCounts(); renderRows(); renderClassrooms();
+    await loadWeekData(); fillSections(); refreshCounts(); renderRows(); renderClassrooms();
     fillGradeChoices();
   }
   function fillGradeChoices() {
@@ -114,6 +164,10 @@
   byId("studentSearch").addEventListener("input", renderRows);
   byId("sectionFilter").addEventListener("change", renderRows);
   byId("statusFilter").addEventListener("change", renderRows);
+  byId("weekStatusFilter").addEventListener("change", renderRows);
+  byId("weekStart").addEventListener("change", () => { const normalized = mondayOf(byId("weekStart").value); if (byId("weekStart").value !== normalized) byId("weekStart").value = normalized; loadWeekData().then(renderRows).catch((error) => { console.error(error); alertBox(byId("studentsAlert"), "No se pudo cargar la semana seleccionada."); }); });
+  byId("previousWeek").addEventListener("click", () => { byId("weekStart").value = addDays(byId("weekStart").value || mondayOf(limaToday()), -7); byId("weekStart").dispatchEvent(new Event("change")); });
+  byId("nextWeek").addEventListener("click", () => { byId("weekStart").value = addDays(byId("weekStart").value || mondayOf(limaToday()), 7); byId("weekStart").dispatchEvent(new Event("change")); });
   byId("addStudent").addEventListener("click", () => openStudent());
   byId("openClassrooms").addEventListener("click", () => { byId("classroomAlert").className = "module-alert"; byId("classroomDialog").showModal(); });
   document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => byId(button.dataset.close).close()));
@@ -136,6 +190,7 @@
     const button = event.target.closest("button[data-action]"); if (!button) return;
     const student = students.find((item) => String(item.id_estudiante) === button.dataset.id); if (!student) return;
     if (button.dataset.action === "edit") { openStudent(student); return; }
+    if (button.dataset.action === "summary") { await openSummary(student); return; }
     const next = !student.activo;
     if (!confirm(`${next ? "¿Activar" : "¿Desactivar"} a ${student.nombres} ${student.apellidos}?`)) return;
     const { error } = await app.client.from("estudiantes").update({ activo: next }).eq("id_estudiante", student.id_estudiante);
@@ -143,6 +198,28 @@
     await app.logAction(next ? "ACTIVAR_ESTUDIANTE" : "DESACTIVAR_ESTUDIANTE", `${student.codigo} · ${student.nombres} ${student.apellidos}`);
     await loadData(); alertBox(byId("studentsAlert"), next ? "Estudiante activado." : "Estudiante desactivado.", "success");
   });
+  async function openSummary(student) {
+    summaryStudent = student; byId("summaryName").textContent = `${student.nombres} ${student.apellidos}`; byId("summarySchoolInfo").textContent = `${student.codigo} · ${sectionTitle(sections.find((section) => section.id_seccion === student.id_seccion) || {})}${student.dni ? ` · DNI ${student.dni}` : ""}`;
+    const details = byId("summaryDetails"); details.replaceChildren();
+    const birth = document.createElement("span"); birth.textContent = `Nacimiento: ${student.fecha_nacimiento || "No registrado"}`;
+    const registered = document.createElement("span"); registered.textContent = `Matrícula: ${student.fecha_registro ? new Intl.DateTimeFormat("es-PE", { dateStyle: "medium" }).format(new Date(student.fecha_registro)) : "No registrada"}`;
+    const state = document.createElement("span"); state.textContent = student.activo ? "Estudiante activo" : "Estudiante inactivo"; details.append(birth, registered, state);
+    if (student.foto_url) { const photo = document.createElement("a"); photo.href = student.foto_url; photo.target = "_blank"; photo.rel = "noopener noreferrer"; photo.textContent = "Ver foto"; details.append(photo); }
+    byId("historyFrom").value = ""; byId("historyTo").value = ""; byId("historyState").value = ""; byId("studentSummaryDialog").showModal(); await loadStudentHistory();
+  }
+  async function loadStudentHistory() {
+    if (!summaryStudent) return;
+    let query = app.client.from("asistencias").select("fecha,hora_ingreso,estado,observacion").eq("id_estudiante", summaryStudent.id_estudiante).order("fecha", { ascending: false }).limit(10000);
+    if (byId("historyFrom").value) query = query.gte("fecha", byId("historyFrom").value); if (byId("historyTo").value) query = query.lte("fecha", byId("historyTo").value);
+    const { data, error } = await query; if (error) { alertBox(byId("studentsAlert"), "No se pudo cargar el historial del estudiante."); return; }
+    historyRecords = data || []; const counts = { PRESENTE: 0, TARDANZA: 0, FALTA: 0 }; historyRecords.forEach((record) => { if (counts[record.estado] !== undefined) counts[record.estado] += 1; }); const recorded = historyRecords.length;
+    byId("summaryPresent").textContent = counts.PRESENTE; byId("summaryLate").textContent = counts.TARDANZA; byId("summaryAbsence").textContent = counts.FALTA; byId("summaryRate").textContent = recorded ? `${Math.round(((counts.PRESENTE + counts.TARDANZA) / recorded) * 100)}%` : "—";
+    const visibleRecords = historyRecords.filter((record) => !byId("historyState").value || record.estado === byId("historyState").value);
+    const rows = byId("studentHistoryRows"); rows.replaceChildren();
+    if (!visibleRecords.length) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = 4; cell.className = "empty-cell"; cell.textContent = "No hay asistencias con este filtro."; row.append(cell); rows.append(row); return; }
+    visibleRecords.forEach((record) => { const row = document.createElement("tr"); [record.fecha, record.hora_ingreso?.slice(0, 5) || "—", record.estado, record.observacion || "—"].forEach((value) => { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); }); rows.append(row); });
+  }
+  ["historyFrom", "historyTo", "historyState"].forEach((id) => byId(id).addEventListener("change", loadStudentHistory));
 
   byId("gradeForm").addEventListener("submit", async (event) => {
     event.preventDefault(); const name = byId("gradeName").value.trim(); const level = byId("gradeLevel").value;

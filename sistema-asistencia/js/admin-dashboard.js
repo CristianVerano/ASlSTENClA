@@ -1,7 +1,7 @@
 (() => {
   const { client, getAuthorizedProfile, loginPath } = window.adminAuth || {};
-  const page = document.querySelector(".dashboard-main");
   const lime = "America/Lima";
+  let classroomSections = [];
 
   function isoDateInLima(date = new Date()) {
     const parts = new Intl.DateTimeFormat("en-US", { timeZone: lime, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
@@ -30,19 +30,16 @@
     return new Intl.NumberFormat("es-PE").format(value);
   }
 
-  function renderWeeklyChart(attendance, today) {
+  function renderWeeklyChart(attendance, today, range, gradeId, sectionId) {
     const chart = document.querySelector("#weeklyChart");
-    const days = Array.from({ length: 7 }, (_, index) => {
-      const date = dateDaysBefore(today, 6 - index);
-      const count = attendance.filter((record) => record.fecha === date).length;
-      const dayName = new Intl.DateTimeFormat("es-PE", { timeZone: lime, weekday: "short" }).format(new Date(`${date}T12:00:00-05:00`)).replace(".", "");
-      return { date, count, dayName, isToday: date === today };
-    });
+    const counts = new Map(); attendance.forEach((record) => counts.set(record.fecha, (counts.get(record.fecha) || 0) + 1));
+    const days = Array.from({ length: range }, (_, index) => { const date = dateDaysBefore(today, range - 1 - index); const dayName = range <= 7 ? new Intl.DateTimeFormat("es-PE", { timeZone: "UTC", weekday: "short" }).format(new Date(`${date}T12:00:00Z`)).replace(".", "") : `${date.slice(8, 10)}/${date.slice(5, 7)}`; return { date, count: counts.get(date) || 0, dayName, isToday: date === today }; });
     const max = Math.max(1, ...days.map((day) => day.count));
-    chart.replaceChildren();
+    chart.replaceChildren(); chart.style.gridTemplateColumns = `repeat(${days.length}, minmax(30px, 1fr))`; chart.style.width = `${Math.max(100, days.length * 34)}px`;
     for (const day of days) {
       const column = document.createElement("div");
       column.className = `week-column${day.isToday ? " today" : ""}`;
+      column.tabIndex = 0; column.setAttribute("role", "link"); column.setAttribute("aria-label", `Abrir reporte del ${day.date}: ${day.count} registros`); column.title = "Abrir el detalle de este día";
       const value = document.createElement("span");
       value.className = "week-value";
       value.textContent = formatNumber(day.count);
@@ -55,6 +52,8 @@
       label.className = "week-label";
       label.textContent = day.dayName;
       column.append(value, track, label);
+      const openDayReport = () => { const params = new URLSearchParams({ desde: day.date, hasta: day.date }); if (gradeId) params.set("grado", gradeId); if (sectionId) params.set("seccion", sectionId); window.location.href = `reportes.html?${params}`; };
+      column.addEventListener("click", openDayReport); column.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDayReport(); } });
       chart.append(column);
     }
   }
@@ -108,28 +107,32 @@
     }
   }
 
-  function renderMetrics(attendance, students, today) {
-    const todayRows = attendance.filter((record) => record.fecha === today);
-    const present = todayRows.filter((record) => record.estado === "PRESENTE").length;
-    const late = todayRows.filter((record) => record.estado === "TARDANZA").length;
-    const absent = todayRows.filter((record) => record.estado === "FALTA").length;
+  function renderMetrics(attendance, students, start, today) {
+    const present = attendance.filter((record) => record.estado === "PRESENTE").length;
+    const late = attendance.filter((record) => record.estado === "TARDANZA").length;
+    const absent = attendance.filter((record) => record.estado === "FALTA").length;
     const registered = present + late + absent;
     const enrollment = students || 0;
-    const registeredPercent = enrollment ? Math.min(100, Math.round((registered / enrollment) * 100)) : 0;
+    const coveredStudents = new Set(attendance.map((record) => {
+      const student = Array.isArray(record.estudiantes) ? record.estudiantes[0] : record.estudiantes;
+      return student?.id_estudiante;
+    }).filter(Boolean)).size;
+    const registeredPercent = enrollment ? Math.min(100, Math.round((coveredStudents / enrollment) * 100)) : 0;
     const presentPercent = registered ? Math.round((present / registered) * 100) : 0;
 
     putText("#todayCount", formatNumber(registered));
     putText("#studentCount", formatNumber(enrollment));
     putText("#presentCount", formatNumber(present));
     putText("#lateCount", formatNumber(late));
-    putText("#presentFoot", `${presentPercent}% de los registros de hoy`);
-    putText("#lateFoot", `${formatNumber(late)} ingreso${late === 1 ? "" : "s"} tardío${late === 1 ? "" : "s"}`);
+    putText("#presentFoot", `${presentPercent}% de los registros del periodo`);
+    putText("#lateFoot", `${formatNumber(late)} tardanza${late === 1 ? "" : "s"} en el periodo`);
+    putText("#periodFoot", `${start} a ${today}`);
     putText("#legendPresent", formatNumber(present));
     putText("#legendLate", formatNumber(late));
     putText("#legendAbsent", formatNumber(absent));
     putText("#attendanceRate", `${presentPercent}%`);
     putText("#attendancePercent", `${registeredPercent}%`);
-    putText("#insightText", enrollment ? `${formatNumber(registered)} de ${formatNumber(enrollment)} estudiantes registraron hoy.` : "Agrega estudiantes para comenzar a ver el resumen.");
+    putText("#insightText", enrollment ? `${formatNumber(coveredStudents)} de ${formatNumber(enrollment)} estudiantes registraron asistencia en el periodo.` : "Agrega estudiantes para comenzar a ver el resumen.");
     document.querySelector("#attendanceProgress").style.width = `${registeredPercent}%`;
     const presentArc = registered ? (present / registered) * 100 : 0;
     const lateArc = registered ? (late / registered) * 100 : 0;
@@ -141,21 +144,64 @@
 
   async function loadDashboard() {
     const today = isoDateInLima();
-    const start = dateDaysBefore(today, 6);
+    const range = Number(document.querySelector("#dashboardRange").value || 7); const start = dateDaysBefore(today, range - 1);
+    const gradeId = document.querySelector("#dashboardGrade").value; const sectionId = document.querySelector("#dashboardSection").value;
     putText("#todayLabel", new Intl.DateTimeFormat("es-PE", { timeZone: lime, weekday: "long", day: "numeric", month: "long" }).format(new Date()));
     putText("#year", new Intl.DateTimeFormat("es-PE", { timeZone: lime, year: "numeric" }).format(new Date()));
+    putText("#dashboardPeriodLabel", `Resumen del ${start} al ${today}. Pulsa una columna para abrir su detalle.`); putText("#chartPeriodLabel", `${range} días · pulsa una barra para abrir el reporte de esa fecha`);
 
-    const [studentsResult, attendanceResult, recentResult] = await Promise.all([
-      client.from("estudiantes").select("id_estudiante", { count: "exact", head: true }).eq("activo", true),
-      client.from("asistencias").select("fecha,estado").gte("fecha", start).lte("fecha", today).order("fecha", { ascending: true }).limit(5000),
-      client.from("asistencias").select("id_asistencia,fecha,hora_ingreso,estado,estudiantes(nombres,apellidos,codigo,secciones(nombre,grados(nombre,nivel)))").order("fecha", { ascending: false }).order("hora_ingreso", { ascending: false }).limit(5)
+    const [studentsResult, attendanceResult] = await Promise.all([
+      client.from("estudiantes").select("id_estudiante,id_seccion,secciones(id_grado)").eq("activo", true).limit(20000),
+      client.from("asistencias").select("id_asistencia,fecha,hora_ingreso,estado,estudiantes(id_estudiante,nombres,apellidos,codigo,secciones(id_seccion,id_grado,nombre,grados(nombre,nivel)))").gte("fecha", start).lte("fecha", today).order("fecha", { ascending: true }).limit(20000)
     ]);
-    const failed = [studentsResult.error, attendanceResult.error, recentResult.error].find(Boolean);
+    const failed = [studentsResult.error, attendanceResult.error].find(Boolean);
     if (failed) throw failed;
-    const attendance = attendanceResult.data || [];
-    renderMetrics(attendance, studentsResult.count || 0, today);
-    renderWeeklyChart(attendance, today);
-    renderRecent(recentResult.data || []);
+    document.querySelector("#dashboardMessage").hidden = true;
+    const selectedStudents = studentsResult.data || []; const enrollment = selectedStudents.filter((student) => { const section = Array.isArray(student.secciones) ? student.secciones[0] : student.secciones; return (!gradeId || String(section?.id_grado) === gradeId) && (!sectionId || String(student.id_seccion) === sectionId); });
+    const attendance = (attendanceResult.data || []).filter((record) => { const student = Array.isArray(record.estudiantes) ? record.estudiantes[0] : record.estudiantes; const section = Array.isArray(student?.secciones) ? student.secciones[0] : student?.secciones; return (!gradeId || String(section?.id_grado) === gradeId) && (!sectionId || String(section?.id_seccion) === sectionId); });
+    renderMetrics(attendance, enrollment.length, start, today);
+    renderWeeklyChart(attendance, today, range, gradeId, sectionId);
+    const latest = [...attendance].sort((a, b) => b.fecha.localeCompare(a.fecha) || String(b.hora_ingreso).localeCompare(String(a.hora_ingreso))).slice(0, 5);
+    renderRecent(latest);
+  }
+
+  async function loadDashboardFilters() {
+    const gradeSelect = document.querySelector("#dashboardGrade");
+    const sectionSelect = document.querySelector("#dashboardSection");
+    const [gradesResult, sectionsResult] = await Promise.all([
+      client.from("grados").select("id_grado,nombre,activo").eq("activo", true).order("nombre"),
+      client.from("secciones").select("id_seccion,nombre,id_grado,activo").eq("activo", true).order("nombre")
+    ]);
+    const failed = gradesResult.error || sectionsResult.error;
+    if (failed) throw failed;
+    classroomSections = sectionsResult.data || [];
+    for (const grade of gradesResult.data || []) {
+      const option = document.createElement("option");
+      option.value = grade.id_grado;
+      option.textContent = grade.nombre;
+      gradeSelect.append(option);
+    }
+    const fillSections = () => {
+      const selected = sectionSelect.value;
+      sectionSelect.replaceChildren(new Option("Todas", ""));
+      const gradeId = gradeSelect.value;
+      classroomSections.filter((section) => !gradeId || String(section.id_grado) === gradeId).forEach((section) => {
+        const option = document.createElement("option");
+        option.value = section.id_seccion;
+        option.textContent = section.nombre;
+        sectionSelect.append(option);
+      });
+      if ([...sectionSelect.options].some((option) => option.value === selected)) sectionSelect.value = selected;
+    };
+    gradeSelect.addEventListener("change", () => { fillSections(); loadDashboard().catch(handleLoadError); });
+    sectionSelect.addEventListener("change", () => loadDashboard().catch(handleLoadError));
+    document.querySelector("#dashboardRange").addEventListener("change", () => loadDashboard().catch(handleLoadError));
+    fillSections();
+  }
+
+  function handleLoadError(error) {
+    console.error("No se pudo actualizar el dashboard:", error);
+    showDashboardError("No pudimos actualizar los indicadores. Revisa tu conexión e inténtalo de nuevo.");
   }
 
   async function protectAndLoad() {
@@ -177,7 +223,7 @@
       document.querySelectorAll(".dashboard-sidebar [data-roles]").forEach((link) => {
         if (!link.dataset.roles.split(",").includes(profile.role)) link.remove();
       });
-      const { data: school } = await client.from("configuracion_sistema").select("nombre_colegio,color_principal,color_secundario,color_fondo").order("id_configuracion").limit(1).maybeSingle();
+      const { data: school } = await client.from("configuracion_sistema").select("nombre_colegio,color_principal,color_secundario,color_fondo,modo").order("id_configuracion").limit(1).maybeSingle();
       if (school) {
         document.documentElement.dataset.colorMode = school.modo || "CLARO";
         putText("#nombreColegio", school.nombre_colegio || "Mi Colegio");
@@ -187,10 +233,10 @@
         if (/^#[0-9a-f]{6}$/i.test(school.color_secundario || "")) document.documentElement.style.setProperty("--school-secondary", school.color_secundario);
         if (/^#[0-9a-f]{6}$/i.test(school.color_fondo || "")) document.documentElement.style.setProperty("--school-background", school.color_fondo);
       }
+      await loadDashboardFilters();
       await loadDashboard();
     } catch (error) {
-      console.error("No se pudo cargar el dashboard:", error);
-      showDashboardError("No pudimos cargar los indicadores. Recarga la página o revisa tu conexión.");
+      handleLoadError(error);
     }
   }
 
