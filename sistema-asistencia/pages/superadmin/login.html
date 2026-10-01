@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102b25">
+  <title>Central administrativa | Asistencia Escolar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="../../css/admin.css">
+  <link rel="stylesheet" href="../../css/superadmin.css">
+  <link rel="stylesheet" href="../../css/theme.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase-config.js"></script>
+  <script src="../../js/admin-auth.js" defer></script>
+  <script src="../../js/superadmin-login.js" defer></script>
+</head>
+<body class="admin-body central-login-body">
+  <div class="admin-shell">
+    <header class="topbar admin-topbar"><a class="brand" href="../../index.html"><span class="brand-mark">C</span><span class="brand-copy"><strong>Asistencia Escolar</strong><small>CENTRAL DE LA PLATAFORMA</small></span></a><a class="back-link" href="../../index.html">← Volver al registro</a></header>
+    <main class="login-main">
+      <section class="login-aside"><span class="eyebrow"><span class="live-dot"></span> ACCESO GLOBAL</span><h1>Una central.<br><span>Todos los colegios.</span></h1><p>Administra instituciones, planes y estado del servicio desde un espacio reservado para la cuenta SUPERADMIN.</p><div class="aside-note"><span class="aside-icon">✳</span><span>Acceso separado del panel de cada colegio</span></div></section>
+      <section class="login-card" aria-labelledby="centralLoginTitle">
+        <div class="login-card-heading"><span class="login-symbol central-symbol" aria-hidden="true">⌂</span><div><h2 id="centralLoginTitle">Central administrativa</h2><p>Ingresa con tu cuenta de plataforma.</p></div></div>
+        <form id="centralLoginForm" class="login-form">
+          <label for="centralEmail">Correo electrónico</label><input id="centralEmail" type="email" autocomplete="username" placeholder="admin@plataforma.com" required>
+          <div class="password-label"><label for="centralPassword">Contraseña</label><button id="centralTogglePassword" class="text-button" type="button" aria-pressed="false">Mostrar</button></div>
+          <input id="centralPassword" type="password" autocomplete="current-password" placeholder="Escribe tu contraseña" required>
+          <button id="centralForgotPassword" class="text-button forgot-password" type="button">Olvidé mi contraseña</button>
+          <div id="centralLoginMessage" class="message" role="alert" aria-live="polite" hidden></div>
+          <button id="centralLoginButton" class="login-button" type="submit"><span>Entrar a la central</span><span aria-hidden="true">→</span></button>
+        </form>
+        <p class="login-help">¿Administras un colegio? <a href="../admin/login.html">Usa el acceso administrativo institucional.</a></p>
+      </section>
+    </main>
+    <footer class="footer"><span>Acceso reservado a la administración de la plataforma.</span><span><a href="../../index.html">Sistema de asistencia</a></span></footer>
+  </div>
+</body>
+</html>

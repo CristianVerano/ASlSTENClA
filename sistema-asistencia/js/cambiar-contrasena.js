@@ -34,7 +34,9 @@
       show("Contraseña actualizada. Volverás al inicio para ingresar con tu nueva clave.", "success");
       form.reset();
       await client.auth.signOut();
-      setTimeout(() => window.location.replace("login.html?actualizada=1"), 1200);
+      const nextLogin = sessionStorage.getItem("centralLogin") === "1" ? "../superadmin/login.html?actualizada=1" : "login.html?actualizada=1";
+      sessionStorage.removeItem("centralLogin");
+      setTimeout(() => window.location.replace(nextLogin), 1200);
     } catch (error) {
       console.error("No se pudo completar el cambio de contraseña:", error);
       show(error.message || "No se pudo cambiar la contraseña. Inténtalo nuevamente.");

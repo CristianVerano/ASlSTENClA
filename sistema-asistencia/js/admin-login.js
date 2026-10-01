@@ -13,7 +13,7 @@
 
   function goToPanel(profile) {
     if (profile.requiereCambioContrasena) window.location.replace("cambiar-contrasena.html");
-    else if (profile.role === "SUPERADMIN") window.location.replace("../superadmin/dashboard.html");
+    else if (profile.role === "SUPERADMIN") window.location.replace("../superadmin/login.html");
     else window.location.replace("dashboard.html");
   }
 

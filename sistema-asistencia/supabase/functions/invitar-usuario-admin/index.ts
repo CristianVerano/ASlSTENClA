@@ -88,6 +88,38 @@ Deno.serve(async (request: Request) => {
     }
     return json({ ok: true, id_colegio: school.id_colegio, slug, email });
   }
+  if (body.action === "resumen-colegios") {
+    if (actorRole.nombre !== "SUPERADMIN") return json({ error: "Solo el superadministrador puede consultar la plataforma." }, 403);
+    const { data: schools, error: schoolsError } = await adminClient.from("colegios").select("id_colegio,nombre,slug,plan,estado,fecha_registro").order("fecha_registro", { ascending: false });
+    if (schoolsError) return json({ error: "No se pudo consultar la lista de colegios." }, 500);
+    let summaries;
+    try {
+      summaries = await Promise.all((schools || []).map(async (school) => {
+        const [students, users, attendance] = await Promise.all([
+          adminClient.from("estudiantes").select("id_estudiante", { count: "exact", head: true }).eq("id_colegio", school.id_colegio),
+          adminClient.from("perfiles").select("id_usuario", { count: "exact", head: true }).eq("id_colegio", school.id_colegio),
+          adminClient.from("asistencias").select("id_asistencia", { count: "exact", head: true }).eq("id_colegio", school.id_colegio),
+        ]);
+        if (students.error || users.error || attendance.error) throw new Error("No se pudieron calcular los indicadores de colegio.");
+        return { ...school, estudiantes: students.count || 0, usuarios: users.count || 0, asistencias: attendance.count || 0 };
+      }));
+    } catch (error) {
+      console.error("Error calculando indicadores de colegios:", error);
+      return json({ error: "No se pudieron calcular los indicadores de colegios." }, 500);
+    }
+    const count = (key: "estudiantes" | "usuarios" | "asistencias") => summaries.reduce((sum, school) => sum + school[key], 0);
+    return json({ ok: true, colegios: summaries, totales: { colegios: summaries.length, activos: summaries.filter((school) => school.estado === "ACTIVO").length, prueba: summaries.filter((school) => school.estado === "PRUEBA").length, suspendidos: summaries.filter((school) => ["SUSPENDIDO", "CANCELADO"].includes(school.estado)).length, estudiantes: count("estudiantes"), usuarios: count("usuarios"), asistencias: count("asistencias") } });
+  }
+  if (body.action === "actualizar-colegio") {
+    if (actorRole.nombre !== "SUPERADMIN") return json({ error: "Solo el superadministrador puede modificar colegios." }, 403);
+    const idColegio = Number(body.id_colegio);
+    const estado = typeof body.estado === "string" ? body.estado : "";
+    const plan = typeof body.plan === "string" ? body.plan : "";
+    if (!Number.isInteger(idColegio) || idColegio < 1 || !["ACTIVO", "PRUEBA", "SUSPENDIDO", "CANCELADO"].includes(estado) || !["Inicial", "Estándar", "Institucional"].includes(plan)) return json({ error: "El estado o el plan seleccionado no es válido." }, 400);
+    const { data: school, error } = await adminClient.from("colegios").update({ estado, plan }).eq("id_colegio", idColegio).select("id_colegio,nombre,estado,plan").maybeSingle();
+    if (error || !school) return json({ error: "No se pudo actualizar el colegio." }, 500);
+    return json({ ok: true, colegio: school });
+  }
   if (actorRole.nombre !== "DIRECTOR") return json({ error: "Solo un director puede gestionar cuentas del colegio." }, 403);
   if (body.action === "listar") {
     const { data: userList, error: listError } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });

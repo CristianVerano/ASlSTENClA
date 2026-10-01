@@ -35,8 +35,10 @@
           <article class="metric-card"><div class="metric-top"><span>Activos</span><span class="metric-icon mint">✓</span></div><strong id="activeCount" class="metric-value">—</strong><div class="metric-foot">Servicio habilitado</div></article>
           <article class="metric-card"><div class="metric-top"><span>En prueba</span><span class="metric-icon blue">◷</span></div><strong id="trialCount" class="metric-value">—</strong><div class="metric-foot">Periodo de evaluación</div></article>
           <article class="metric-card"><div class="metric-top"><span>Suspendidos</span><span class="metric-icon amber">Ⅱ</span></div><strong id="suspendedCount" class="metric-value">—</strong><div class="metric-foot">Requieren revisión</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Estudiantes</span><span class="metric-icon blue">♙</span></div><strong id="studentCount" class="metric-value">—</strong><div class="metric-foot">Total en todos los colegios</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Cuentas de personal</span><span class="metric-icon mint">♧</span></div><strong id="staffCount" class="metric-value">—</strong><div class="metric-foot">Directores, administradores y auxiliares</div></article>
         </section>
-        <section class="panel-card platform-schools-panel"><div class="panel-heading"><div><h2>Instituciones</h2><p id="schoolSummary">Cargando colegios…</p></div></div><div class="recent-table-wrap"><table class="recent-table"><thead><tr><th>COLEGIO</th><th>IDENTIFICADOR</th><th>PLAN</th><th>ESTADO</th><th>REGISTRO</th></tr></thead><tbody id="schoolRows"><tr><td class="empty-row" colspan="5">Cargando…</td></tr></tbody></table></div></section>
+        <section class="panel-card platform-schools-panel"><div class="panel-heading"><div><h2>Instituciones</h2><p id="schoolSummary">Cargando colegios…</p></div></div><div class="recent-table-wrap"><table class="recent-table platform-table"><thead><tr><th>COLEGIO</th><th>IDENTIFICADOR</th><th>PLAN</th><th>ESTADO</th><th>ALUMNOS</th><th>PERSONAL</th><th>ASISTENCIAS</th><th>REGISTRO</th><th>GESTIÓN</th></tr></thead><tbody id="schoolRows"><tr><td class="empty-row" colspan="9">Cargando…</td></tr></tbody></table></div></section>
         <div id="platformMessage" class="dashboard-message" role="status" aria-live="polite" hidden></div>
       </main>
       <footer class="dashboard-footer"><span>Administración de la plataforma</span><span>© <span id="year"></span> Asistencia Escolar</span></footer>
@@ -55,6 +57,19 @@
         <label>Correo<input id="newDirectorEmail" type="email" maxlength="254" required autocomplete="email"></label>
         <label>Contraseña temporal<input id="newDirectorPassword" type="password" minlength="12" maxlength="128" required autocomplete="new-password"><small>Debe tener 12 caracteres o más. El Director deberá cambiarla al ingresar.</small></label>
         <div class="school-dialog-actions"><button class="school-dialog-secondary" type="button" data-school-close>Cancelar</button><button id="saveSchool" class="school-create-button" type="submit">Crear colegio</button></div>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="manageSchoolDialog" class="school-dialog school-manage-dialog">
+    <form id="manageSchoolForm">
+      <div class="school-dialog-head"><div><h2 id="manageSchoolTitle">Administrar colegio</h2><p id="manageSchoolSlug"></p></div><button class="school-dialog-close" type="button" data-manage-close aria-label="Cerrar">×</button></div>
+      <div class="school-dialog-body">
+        <div id="manageSchoolMessage" class="school-form-message" role="alert" hidden></div>
+        <label>Estado del servicio<select id="manageSchoolState" required><option value="ACTIVO">Activo</option><option value="PRUEBA">En prueba</option><option value="SUSPENDIDO">Suspendido</option><option value="CANCELADO">Cancelado</option></select><small>Los colegios suspendidos o cancelados no pueden registrar asistencia.</small></label>
+        <label>Plan<select id="manageSchoolPlan" required><option>Inicial</option><option>Estándar</option><option>Institucional</option></select></label>
+        <div class="school-manage-metrics"><span><strong id="manageStudents">—</strong> estudiantes</span><span><strong id="manageUsers">—</strong> cuentas</span><span><strong id="manageAttendance">—</strong> asistencias</span></div>
+        <a id="openSchoolKiosk" class="school-kiosk-link" target="_blank" rel="noopener">Abrir el kiosco de este colegio ↗</a>
+        <div class="school-dialog-actions"><button class="school-dialog-secondary" type="button" data-manage-close>Cancelar</button><button id="saveSchoolChanges" class="school-create-button" type="submit">Guardar cambios</button></div>
       </div>
     </form>
   </dialog>
