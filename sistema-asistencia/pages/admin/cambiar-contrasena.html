@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102b25">
+  <title>Cambiar contraseña | Mi Colegio</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="../../css/admin.css">
+  <link rel="stylesheet" href="../../css/theme.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase-config.js"></script>
+  <script src="../../js/admin-auth.js" defer></script>
+  <script src="../../js/cambiar-contrasena.js" defer></script>
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <header class="topbar admin-topbar"><a class="brand" href="../../index.html"><span class="brand-mark">C</span><span class="brand-copy"><strong id="nombreColegio">Mi Colegio</strong><small>ÁREA ADMINISTRATIVA</small></span></a></header>
+    <main class="login-main" style="grid-template-columns:minmax(0,480px);justify-content:center">
+      <section class="login-card" aria-labelledby="changeTitle">
+        <div class="login-card-heading"><span class="login-symbol" aria-hidden="true">⌑</span><div><h1 id="changeTitle">Crea tu contraseña personal</h1><p>Por seguridad, debes cambiar la contraseña temporal antes de continuar.</p></div></div>
+        <form id="changePasswordForm" class="login-form">
+          <label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+          <label for="confirmPassword">Repite la contraseña</label><input id="confirmPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+          <div id="changePasswordMessage" class="message" role="status" aria-live="polite" hidden></div>
+          <button id="changePasswordButton" class="login-button" type="submit"><span>Guardar y continuar</span><span aria-hidden="true">→</span></button>
+        </form>
+      </section>
+    </main>
+    <footer class="footer"><span>La contraseña se administra de forma segura por Supabase.</span></footer>
+  </div>
+</body>
+</html>

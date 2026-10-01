@@ -46,6 +46,7 @@
     try { profile = await getAuthorizedProfile(session.user.id); }
     catch { window.location.replace(loginPath()); return null; }
     if (!profile) { await client.auth.signOut(); window.location.replace(loginPath()); return null; }
+    if (profile.requiereCambioContrasena && currentPage !== "cambiar-contrasena") { window.location.replace("cambiar-contrasena.html"); return null; }
     const allowed = (document.body.dataset.allowedRoles || "DIRECTOR").split(",").map((role) => role.trim());
     if (!allowed.includes(profile.role)) {
       document.querySelector("main").innerHTML = "<section class='module-card'><h1>Acceso restringido</h1><p>Tu rol no permite abrir esta sección.</p><a class='button-link' href='dashboard.html'>Volver al panel</a></section>";

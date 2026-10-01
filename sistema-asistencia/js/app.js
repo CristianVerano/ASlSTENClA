@@ -9,6 +9,7 @@
   const message = document.querySelector("#mensaje");
   const studentCard = document.querySelector("#tarjetaEstudiante");
   let clearTimer;
+  const schoolSlug = new URLSearchParams(window.location.search).get("colegio") || "san-pio-x-circa";
 
   const clockOptions = { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false };
   const dateOptions = { timeZone: "America/Lima", weekday: "long", day: "numeric", month: "long", year: "numeric" };
@@ -66,7 +67,7 @@
       showMessage("No se pudo iniciar la conexión. Revisa js/supabase-config.js y vuelve a cargar la página.", "error");
       return;
     }
-    const { data: students, error: searchError } = await client.rpc("buscar_estudiante_asistencia", { p_codigo: code });
+    const { data: students, error: searchError } = await client.rpc("buscar_estudiante_asistencia", { p_codigo: code, p_colegio_slug: schoolSlug });
     if (searchError) throw searchError;
     const student = students?.[0];
     if (!student) {
@@ -75,7 +76,7 @@
       return;
     }
 
-    const { data: attendance, error: attendanceError } = await client.rpc("registrar_asistencia_publica", { p_codigo: code });
+    const { data: attendance, error: attendanceError } = await client.rpc("registrar_asistencia_publica", { p_codigo: code, p_colegio_slug: schoolSlug });
     if (attendanceError) throw attendanceError;
     if (attendance.resultado === "NO_LABORABLE") {
       studentCard.hidden = true;

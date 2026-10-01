@@ -1,6 +1,6 @@
 # Crear la primera cuenta administrativa
 
-Para arrancar el sistema se necesita al menos una cuenta DIRECTOR. Si ya puedes iniciar sesión, usa **Usuarios y roles** dentro del panel para invitar al resto del personal; no necesitas crearles perfiles manualmente.
+Para arrancar el sistema se necesita al menos una cuenta DIRECTOR. La primera cuenta se crea desde Supabase Auth y se vincula manualmente con `perfiles`. Después, el director puede crear cuentas de Administrador y Auxiliar desde **Usuarios y roles**: el sistema asigna una contraseña temporal y exige cambiarla en el primer ingreso.
 
 ## 1. Crear el usuario en Supabase Auth
 
@@ -25,8 +25,8 @@ values (
 
 El proyecto ya tiene activo el rol `DIRECTOR` con `id_rol = 1`. También existen `ADMINISTRADOR` (`id_rol = 2`) y `AUXILIAR` (`id_rol = 3`). Para asignar otro rol, cambia únicamente el número `1` por el ID correspondiente.
 
-Luego abre `pages/admin/login.html`, inicia sesión con el correo y contraseña creados, y el panel validará el perfil y el rol antes de mostrar el dashboard. Cuando la cuenta del director ya funcione, las invitaciones de personal y los cambios de rol se hacen desde **Usuarios y roles**.
+Luego abre `pages/admin/login.html`, inicia sesión con el correo y contraseña creados, y el panel validará el perfil y el rol antes de mostrar el dashboard. Las nuevas cuentas de Administrador y Auxiliar se crean desde **Usuarios y roles**. Comparte la contraseña temporal por un canal privado; el sistema pedirá cambiarla al iniciar sesión.
 
-Para invitar personal, el proveedor de correo de Supabase Auth debe estar habilitado y tener configurada la URL de retorno del sitio. En **Authentication → URL Configuration → Redirect URLs**, agrega `https://tu-dominio-vercel.vercel.app/**` y reemplaza el ejemplo por el dominio real de Vercel. Los enlaces abren `pages/admin/accept-invite.html`, donde el usuario crea su contraseña. En el inicio de sesión, cada usuario puede solicitar un enlace para restablecerla. La función de invitación verifica el JWT y el perfil DIRECTOR en cada solicitud; la clave de servicio permanece en el servidor Supabase.
+La recuperación de contraseña sigue usando el correo de Supabase Auth. En **Authentication → URL Configuration → Redirect URLs**, agrega `https://tu-dominio-vercel.vercel.app/**` y reemplaza el ejemplo por el dominio real de Vercel. La función `invitar-usuario-admin` verifica el JWT y el perfil DIRECTOR en cada solicitud. Usa la clave de servicio exclusivamente en el servidor Supabase; nunca la copies al frontend.
 
 No agregues una clave `service_role` al frontend. La página usa la clave publishable/anon guardada en `js/supabase-config.js`.

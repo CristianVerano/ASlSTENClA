@@ -11,13 +11,19 @@
     message.hidden = false;
   }
 
+  function goToPanel(profile) {
+    if (profile.requiereCambioContrasena) window.location.replace("cambiar-contrasena.html");
+    else if (profile.role === "SUPERADMIN") window.location.replace("../superadmin/dashboard.html");
+    else window.location.replace("dashboard.html");
+  }
+
   async function checkExistingSession() {
     if (!client) return showError("No se pudo iniciar la conexión. Revisa la configuración de Supabase.");
     const { data: { session } } = await client.auth.getSession();
     if (!session) return;
     try {
       const profile = await getAuthorizedProfile(session.user.id);
-      if (profile) window.location.replace("dashboard.html");
+      if (profile) goToPanel(profile);
       else await client.auth.signOut();
     } catch {
       showError("No se pudo verificar tu perfil. Intenta iniciar sesión nuevamente.");
@@ -44,7 +50,7 @@
         showError("Tu cuenta no tiene un perfil activo con un rol autorizado. Contacta al administrador del colegio.");
         return;
       }
-      window.location.replace("dashboard.html");
+      goToPanel(profile);
     } catch (error) {
       console.error("Error al verificar el acceso administrativo:", error);
       showError("No se pudo verificar tu acceso. Comprueba la conexión e inténtalo de nuevo.");
@@ -76,4 +82,9 @@
   });
 
   checkExistingSession();
+  if (new URLSearchParams(window.location.search).get("actualizada") === "1") {
+    message.textContent = "Contraseña actualizada. Inicia sesión con tu nueva contraseña.";
+    message.className = "message success";
+    message.hidden = false;
+  }
 })();

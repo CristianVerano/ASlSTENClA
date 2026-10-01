@@ -2,17 +2,16 @@
   const byId = (id) => document.getElementById(id);
   let app; let profiles = []; let roles = []; let emails = new Map(); let authUsers = new Map();
   function show(target, text, type = "success") { target.textContent = text; target.className = `module-alert show ${type}`; }
-  function friendlyInviteError(message) {
+  function friendlyAccountError(message) {
     const value = String(message || "").toLocaleLowerCase("es");
-    if (value.includes("already registered") || value.includes("already exists") || value.includes("ya está registrado")) return "Ese correo ya tiene una cuenta en Supabase. Revisa la lista de usuarios antes de invitarlo nuevamente.";
-    if (value.includes("redirect") || value.includes("url") && value.includes("allowed")) return "Supabase rechazó la dirección de retorno. Agrega el dominio de Vercel en Authentication → URL Configuration → Redirect URLs.";
-    if (value.includes("rate limit") || value.includes("email rate")) return "Supabase limitó temporalmente el envío de invitaciones. Espera un momento e inténtalo de nuevo.";
-    return message || "No se pudo enviar la invitación. Verifica el correo y la configuración de Supabase Auth.";
+    if (value.includes("already registered") || value.includes("already exists") || value.includes("ya está registrado")) return "Ese correo ya tiene una cuenta en Supabase. Revisa la lista de usuarios antes de intentarlo nuevamente.";
+    if (value.includes("password") || value.includes("contraseña")) return "No se pudo crear la cuenta. Revisa que la contraseña tenga al menos 12 caracteres.";
+    return message || "No se pudo crear la cuenta. Verifica el correo y vuelve a intentarlo.";
   }
   async function loadData() {
     const [profileResult, roleResult] = await Promise.all([
       app.client.from("perfiles").select("id_usuario,id_rol,nombres,apellidos,activo,roles(nombre)").order("nombres"),
-      app.client.from("roles").select("id_rol,nombre,descripcion,activo").eq("activo", true).order("id_rol")
+      app.client.from("roles").select("id_rol,nombre,descripcion,activo").eq("activo", true).neq("nombre", "SUPERADMIN").order("id_rol")
     ]);
     const error = profileResult.error || roleResult.error; if (error) throw error;
     profiles = profileResult.data || []; roles = roleResult.data || [];
@@ -20,7 +19,7 @@
     emails = new Map((authData?.emails || []).map((user) => [user.id, user.email]));
     authUsers = new Map((authData?.emails || []).map((user) => [user.id, user]));
     if (authError) console.warn("No se pudieron mostrar los correos de Auth:", authError.message);
-    const select = byId("profileRole"); select.replaceChildren(new Option("Selecciona un rol", "")); roles.forEach((role) => select.add(new Option(role.nombre, role.id_rol)));
+    const select = byId("profileRole"); select.replaceChildren(new Option("Selecciona un rol", "")); roles.filter((role) => ["ADMINISTRADOR", "AUXILIAR"].includes(role.nombre)).forEach((role) => select.add(new Option(role.nombre, role.id_rol)));
     render();
   }
   function render() {
@@ -33,8 +32,8 @@
       const roleCell = document.createElement("td");
       if (mine) { const badge = document.createElement("span"); badge.className = "table-status presente"; badge.textContent = profile.roles?.nombre || "—"; roleCell.append(badge); }
       else { const roleSelect = document.createElement("select"); roleSelect.className = "inline-role"; roleSelect.dataset.user = profile.id_usuario; roles.forEach((role) => roleSelect.add(new Option(role.nombre, role.id_rol, false, role.id_rol === profile.id_rol))); roleCell.append(roleSelect); }
-      const state = document.createElement("td"); const badge = document.createElement("span"); const auth = authUsers.get(profile.id_usuario); const pending = profile.activo && auth && !auth.confirmado; badge.className = `table-status ${!profile.activo ? "falta" : pending ? "tardanza" : "presente"}`; badge.textContent = !profile.activo ? "Inactivo" : pending ? "Invitación pendiente" : "Activo"; state.append(badge);
-      const lastAccess = document.createElement("td"); lastAccess.textContent = auth?.ultimo_acceso ? new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(auth.ultimo_acceso)) : pending ? "Aún no aceptó" : "Sin ingresos";
+      const state = document.createElement("td"); const badge = document.createElement("span"); const auth = authUsers.get(profile.id_usuario); const pending = profile.activo && auth && !auth.confirmado; const mustChangePassword = auth?.requiere_cambio_contrasena; badge.className = `table-status ${!profile.activo ? "falta" : pending || mustChangePassword ? "tardanza" : "presente"}`; badge.textContent = !profile.activo ? "Inactivo" : pending ? "Invitación pendiente" : mustChangePassword ? "Cambio de clave pendiente" : "Activo"; state.append(badge);
+      const lastAccess = document.createElement("td"); lastAccess.textContent = auth?.ultimo_acceso ? new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(auth.ultimo_acceso)) : mustChangePassword ? "Primer ingreso pendiente" : pending ? "Aún no aceptó" : "Sin ingresos";
       const action = document.createElement("td");
       if (!mine) { const button = document.createElement("button"); button.type = "button"; button.className = `row-action${profile.activo ? " danger" : ""}`; button.dataset.toggleUser = profile.id_usuario; button.textContent = profile.activo ? "Desactivar acceso" : "Reactivar acceso"; action.append(button); }
       else action.textContent = "Cuenta protegida";
@@ -45,18 +44,20 @@
   document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => byId(button.dataset.close).close()));
   byId("profileForm").addEventListener("submit", async (event) => {
     event.preventDefault(); const button = byId("saveProfile"); button.disabled = true;
-    const record = { email: byId("profileEmail").value.trim(), id_rol: Number(byId("profileRole").value), nombres: byId("profileNames").value.trim(), apellidos: byId("profileLastNames").value.trim() };
+    const record = { email: byId("profileEmail").value.trim(), id_rol: Number(byId("profileRole").value), nombres: byId("profileNames").value.trim(), apellidos: byId("profileLastNames").value.trim(), password: byId("profilePassword").value };
+    if (record.password !== byId("profilePasswordConfirm").value) { show(byId("profileFormAlert"), "Las contraseñas no coinciden.", "error"); button.disabled = false; return; }
+    if (record.password.length < 12) { show(byId("profileFormAlert"), "La contraseña inicial debe tener al menos 12 caracteres.", "error"); button.disabled = false; return; }
     try {
-      const { data, error } = await app.client.functions.invoke("invitar-usuario-admin", { body: record });
+      const { data, error } = await app.client.functions.invoke("invitar-usuario-admin", { body: { action: "crear", ...record } });
       if (error) {
         let detail = data?.error;
         try { detail ||= (await error.context?.clone().json())?.error; } catch { /* La respuesta puede no contener JSON. */ }
-        throw new Error(friendlyInviteError(detail || error.message));
+        throw new Error(friendlyAccountError(detail || error.message));
       }
-      if (data?.error) throw new Error(friendlyInviteError(data.error));
-      await app.logAction("INVITAR_USUARIO", `${record.email} · ${record.nombres} ${record.apellidos} · ${roles.find((role) => role.id_rol === record.id_rol)?.nombre}`);
-      byId("profileDialog").close(); show(byId("profilesAlert"), `Invitación enviada a ${record.email}.`); await loadData();
-    } catch (error) { console.error(error); show(byId("profileFormAlert"), friendlyInviteError(error.message), "error"); }
+      if (data?.error) throw new Error(friendlyAccountError(data.error));
+      await app.logAction("CREAR_CUENTA_USUARIO", `${record.email} · ${record.nombres} ${record.apellidos} · ${roles.find((role) => role.id_rol === record.id_rol)?.nombre}`);
+      byId("profileDialog").close(); show(byId("profilesAlert"), `Cuenta creada para ${record.email}. Entrega la contraseña temporal por un canal privado.`); await loadData();
+    } catch (error) { console.error(error); show(byId("profileFormAlert"), friendlyAccountError(error.message), "error"); }
     finally { button.disabled = false; }
   });
   byId("profileRows").addEventListener("change", async (event) => {

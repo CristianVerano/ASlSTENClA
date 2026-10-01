@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#287e68">
+  <title>Plataforma | Mi Colegio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="../../css/admin.css">
+  <link rel="stylesheet" href="../../css/dashboard.css">
+  <link rel="stylesheet" href="../../css/superadmin.css">
+  <link rel="stylesheet" href="../../css/theme.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase-config.js"></script>
+  <script src="../../js/admin-auth.js" defer></script>
+  <script src="../../js/superadmin-dashboard.js" defer></script>
+</head>
+<body class="dashboard-body">
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar">
+      <a class="sidebar-brand" href="dashboard.html"><span class="sidebar-logo">P</span><span><strong>Asistencia Escolar</strong><small>PLATAFORMA</small></span></a>
+      <div class="sidebar-caption">GESTIÓN GLOBAL</div>
+      <nav class="sidebar-nav" aria-label="Navegación de plataforma"><a class="nav-item active" href="dashboard.html"><span class="nav-icon">⌂</span><span>Colegios</span><i></i></a></nav>
+      <div class="sidebar-bottom"><div class="sidebar-help"><span class="help-icon">★</span><div><strong>Superadministración</strong><small>Control de plataforma</small></div></div><button id="logoutButton" class="sidebar-logout" type="button"><span>⇥</span> Cerrar sesión</button></div>
+    </aside>
+    <div class="dashboard-workspace">
+      <header class="workspace-topbar"><div class="dashboard-search"><span>⌕</span><input id="schoolSearch" type="search" placeholder="Buscar colegio…" aria-label="Buscar colegio"></div><div class="topbar-tools"><span id="todayLabel" class="topbar-date"></span><div class="topbar-user"><div class="user-avatar" id="userInitials">SA</div><div class="user-summary"><strong id="userName">Cargando…</strong><span>Superadministrador</span></div></div></div></header>
+      <main class="dashboard-main">
+        <section class="dashboard-heading"><div><span class="eyebrow"><span class="live-dot"></span> CONTROL DE LA PLATAFORMA</span><h1>Panel global</h1><p>Resumen de las instituciones que usan el sistema.</p></div><button id="addSchool" class="school-create-button" type="button">＋ Registrar colegio</button></section>
+        <section class="metric-grid" aria-label="Resumen de colegios">
+          <article class="metric-card"><div class="metric-top"><span>Colegios registrados</span><span class="metric-icon mint">▣</span></div><strong id="schoolCount" class="metric-value">—</strong><div class="metric-foot">Instituciones en la plataforma</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Activos</span><span class="metric-icon mint">✓</span></div><strong id="activeCount" class="metric-value">—</strong><div class="metric-foot">Servicio habilitado</div></article>
+          <article class="metric-card"><div class="metric-top"><span>En prueba</span><span class="metric-icon blue">◷</span></div><strong id="trialCount" class="metric-value">—</strong><div class="metric-foot">Periodo de evaluación</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Suspendidos</span><span class="metric-icon amber">Ⅱ</span></div><strong id="suspendedCount" class="metric-value">—</strong><div class="metric-foot">Requieren revisión</div></article>
+        </section>
+        <section class="panel-card platform-schools-panel"><div class="panel-heading"><div><h2>Instituciones</h2><p id="schoolSummary">Cargando colegios…</p></div></div><div class="recent-table-wrap"><table class="recent-table"><thead><tr><th>COLEGIO</th><th>IDENTIFICADOR</th><th>PLAN</th><th>ESTADO</th><th>REGISTRO</th></tr></thead><tbody id="schoolRows"><tr><td class="empty-row" colspan="5">Cargando…</td></tr></tbody></table></div></section>
+        <div id="platformMessage" class="dashboard-message" role="status" aria-live="polite" hidden></div>
+      </main>
+      <footer class="dashboard-footer"><span>Administración de la plataforma</span><span>© <span id="year"></span> Asistencia Escolar</span></footer>
+    </div>
+  </div>
+  <dialog id="schoolDialog" class="school-dialog">
+    <form id="schoolForm">
+      <div class="school-dialog-head"><div><h2>Registrar colegio</h2><p>Se creará la institución y su cuenta de Director.</p></div><button class="school-dialog-close" type="button" data-school-close aria-label="Cerrar">×</button></div>
+      <div class="school-dialog-body">
+        <div id="schoolFormMessage" class="school-form-message" role="alert" hidden></div>
+        <label>Nombre del colegio<input id="newSchoolName" maxlength="160" required autocomplete="organization"></label>
+        <label>Identificador de acceso<input id="newSchoolSlug" maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" required><small>Dirección del kiosco: ?colegio=identificador</small></label>
+        <label>Plan<select id="newSchoolPlan"><option>Inicial</option><option>Estándar</option><option>Institucional</option></select></label>
+        <div class="school-dialog-divider">Director inicial</div>
+        <div class="school-dialog-grid"><label>Nombres<input id="newDirectorNames" maxlength="100" required autocomplete="given-name"></label><label>Apellidos<input id="newDirectorLastNames" maxlength="100" required autocomplete="family-name"></label></div>
+        <label>Correo<input id="newDirectorEmail" type="email" maxlength="254" required autocomplete="email"></label>
+        <label>Contraseña temporal<input id="newDirectorPassword" type="password" minlength="12" maxlength="128" required autocomplete="new-password"><small>Debe tener 12 caracteres o más. El Director deberá cambiarla al ingresar.</small></label>
+        <div class="school-dialog-actions"><button class="school-dialog-secondary" type="button" data-school-close>Cancelar</button><button id="saveSchool" class="school-create-button" type="submit">Crear colegio</button></div>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

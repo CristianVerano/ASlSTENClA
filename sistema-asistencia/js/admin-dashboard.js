@@ -215,6 +215,8 @@
         await client.auth.signOut();
         return window.location.replace(loginPath());
       }
+      if (profile.requiereCambioContrasena) return window.location.replace("cambiar-contrasena.html");
+      if (profile.role === "SUPERADMIN") return window.location.replace("../superadmin/dashboard.html");
       const name = [profile.nombres, profile.apellidos].filter(Boolean).join(" ") || session.user.email;
       putText("#userName", name);
       putText("#welcomeName", profile.nombres || "bienvenido");
