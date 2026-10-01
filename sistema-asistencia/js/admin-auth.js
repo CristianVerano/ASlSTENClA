@@ -1,5 +1,13 @@
 (() => {
-  const client = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
+  const client = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      storage: window.sessionStorage,
+      storageKey: "colegio-asistencia-admin-session",
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
   const allowedRoles = new Set(["SUPERADMIN", "DIRECTOR", "ADMINISTRADOR", "AUXILIAR"]);
 
   async function getAuthorizedProfile(userId) {
@@ -16,9 +24,17 @@
     return { ...data, role: role.nombre, requiereCambioContrasena: sameUser && authData.session.user.app_metadata?.requiere_cambio_contrasena === true };
   }
 
+  async function getSelectedSchool() {
+    const slug = new URLSearchParams(window.location.search).get("colegio")?.trim().toLowerCase();
+    if (!slug) return null;
+    const { data, error } = await client.rpc("listar_colegios_publicos");
+    if (error) throw error;
+    return (data || []).find((school) => school.slug === slug) || null;
+  }
+
   function loginPath() {
     return new URL("../admin/login.html", window.location.href).href;
   }
 
-  window.adminAuth = { client, getAuthorizedProfile, loginPath };
+  window.adminAuth = { client, getAuthorizedProfile, getSelectedSchool, loginPath };
 })();

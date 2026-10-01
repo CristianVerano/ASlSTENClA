@@ -34,7 +34,9 @@
       show("Contraseña actualizada. Volverás al inicio para ingresar con tu nueva clave.", "success");
       form.reset();
       await client.auth.signOut();
-      const nextLogin = sessionStorage.getItem("centralLogin") === "1" ? "../superadmin/login.html?actualizada=1" : "login.html?actualizada=1";
+      const centralLogin = sessionStorage.getItem("centralLogin") === "1";
+      const schoolSlug = new URLSearchParams(window.location.search).get("colegio") || sessionStorage.getItem("adminSchoolSlug");
+      const nextLogin = centralLogin ? "../superadmin/login.html?actualizada=1" : `login.html?colegio=${encodeURIComponent(schoolSlug || "")}&actualizada=1`;
       sessionStorage.removeItem("centralLogin");
       setTimeout(() => window.location.replace(nextLogin), 1200);
     } catch (error) {

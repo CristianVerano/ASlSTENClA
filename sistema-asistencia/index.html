@@ -10,8 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/school-picker.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
+  <script src="js/school-picker.js" defer></script>
   <script src="js/school-brand.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
@@ -25,12 +27,28 @@
       <div class="clock-block"><span id="fecha">Cargando fecha…</span><strong id="hora">--:--:--</strong></div>
     </header>
 
-    <main id="inicio" class="main-content">
+    <main id="selectorColegios" class="main-content school-picker" hidden>
+      <section class="intro" aria-labelledby="selectorTitulo">
+        <span class="eyebrow"><span class="live-dot"></span> CONTROL DE ASISTENCIA</span>
+        <h1 id="selectorTitulo">Selecciona tu <span>colegio.</span></h1>
+        <p>Elige la institución para abrir su pantalla de asistencia.</p>
+      </section>
+      <section id="listaColegios" class="school-picker-grid" aria-live="polite"><p class="school-picker-loading">Cargando colegios…</p></section>
+      <p id="selectorMensaje" class="message" role="status" aria-live="polite" hidden></p>
+    </main>
+
+    <main id="inicio" class="main-content" hidden>
       <section class="intro" aria-labelledby="titulo">
         <span class="eyebrow"><span class="live-dot"></span> REGISTRO DE INGRESO</span>
         <h1 id="titulo">Tu día comienza <span>con un registro.</span></h1>
         <p>Escribe tu código de estudiante para registrar tu asistencia.</p>
       </section>
+
+      <nav class="school-context-links" aria-label="Accesos del colegio">
+        <span id="colegioSeleccionado"></span>
+        <a id="cambiarColegio" href="./">Cambiar colegio</a>
+        <a id="accesoAdministrativo" href="pages/admin/login.html">Acceso administrativo de este colegio</a>
+      </nav>
 
       <section class="checkin-card" aria-label="Registro de asistencia">
         <form id="formulario" class="checkin-form" autocomplete="off">
@@ -66,7 +84,7 @@
       </section>
     </main>
 
-    <footer class="footer"><span>Un espacio para aprender y crecer.</span><span class="footer-actions"><a href="pages/admin/login.html">Acceso administrativo</a><a href="pages/superadmin/login.html">Central administrativa</a><span>© <span id="anio"></span> <span id="nombreColegioFooter">Mi Colegio</span></span></span></footer>
+    <footer class="footer"><span>Un espacio para aprender y crecer.</span><span class="footer-actions"><a href="pages/superadmin/login.html">Central administrativa</a><span>© <span id="anio"></span> <span id="nombreColegioFooter">Mi Colegio</span></span></span></footer>
   </div>
 </body>
 </html>

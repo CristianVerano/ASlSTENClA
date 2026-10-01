@@ -1,9 +1,38 @@
 (() => {
-  const { client, getAuthorizedProfile } = window.adminAuth || {};
+  const { client, getAuthorizedProfile, getSelectedSchool } = window.adminAuth || {};
   const form = document.querySelector("#loginForm");
   const message = document.querySelector("#loginMessage");
   const button = document.querySelector("#loginButton");
   const password = document.querySelector("#password");
+  let selectedSchool = null;
+
+  const schoolReady = getSelectedSchool().then((school) => {
+    selectedSchool = school;
+    if (!school) {
+      message.textContent = "Primero selecciona el colegio al que deseas ingresar.";
+      message.className = "message error";
+      message.hidden = false;
+      window.location.replace("../../index.html");
+    }
+    return school;
+  }).catch((error) => {
+    console.error("No se pudo validar el colegio seleccionado:", error);
+    showError("No se pudo validar el colegio. Regresa a la lista e inténtalo nuevamente.");
+    return null;
+  });
+
+  async function validateSchoolProfile(profile) {
+    if (!profile || profile.role === "SUPERADMIN" || Number(profile.id_colegio) !== Number(selectedSchool?.id_colegio)) {
+      await client.auth.signOut();
+      showError(profile?.role === "SUPERADMIN"
+        ? "Esta cuenta es de la Central Administrativa. Inicia sesión desde ese acceso."
+        : `Esta cuenta no pertenece a ${selectedSchool?.nombre || "este colegio"}. Selecciona la institución correcta.`);
+      return false;
+    }
+    sessionStorage.setItem("adminSchoolId", String(selectedSchool.id_colegio));
+    sessionStorage.setItem("adminSchoolSlug", selectedSchool.slug);
+    return true;
+  }
 
   function showError(text) {
     message.textContent = text;
@@ -12,18 +41,19 @@
   }
 
   function goToPanel(profile) {
-    if (profile.requiereCambioContrasena) window.location.replace("cambiar-contrasena.html");
+    if (profile.requiereCambioContrasena) window.location.replace(`cambiar-contrasena.html?colegio=${encodeURIComponent(selectedSchool.slug)}`);
     else if (profile.role === "SUPERADMIN") window.location.replace("../superadmin/login.html");
     else window.location.replace("dashboard.html");
   }
 
   async function checkExistingSession() {
     if (!client) return showError("No se pudo iniciar la conexión. Revisa la configuración de Supabase.");
+    if (!await schoolReady) return;
     const { data: { session } } = await client.auth.getSession();
     if (!session) return;
     try {
       const profile = await getAuthorizedProfile(session.user.id);
-      if (profile) goToPanel(profile);
+      if (profile && await validateSchoolProfile(profile)) goToPanel(profile);
       else await client.auth.signOut();
     } catch {
       showError("No se pudo verificar tu perfil. Intenta iniciar sesión nuevamente.");
@@ -32,6 +62,7 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!await schoolReady) return;
     if (!client) return showError("No se pudo iniciar la conexión. Revisa la configuración de Supabase.");
     message.hidden = true;
     button.disabled = true;
@@ -45,9 +76,8 @@
         return;
       }
       const profile = await getAuthorizedProfile(data.user.id);
-      if (!profile) {
-        await client.auth.signOut();
-        showError("Tu cuenta no tiene un perfil activo con un rol autorizado. Contacta al administrador del colegio.");
+      if (!await validateSchoolProfile(profile)) {
+        if (!profile) showError("Tu cuenta no tiene un perfil activo con un rol autorizado. Contacta al administrador del colegio.");
         return;
       }
       goToPanel(profile);

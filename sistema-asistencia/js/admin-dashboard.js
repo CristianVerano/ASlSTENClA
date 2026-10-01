@@ -215,8 +215,15 @@
         await client.auth.signOut();
         return window.location.replace(loginPath());
       }
-      if (profile.requiereCambioContrasena) return window.location.replace("cambiar-contrasena.html");
       if (profile.role === "SUPERADMIN") return window.location.replace("../superadmin/login.html");
+      const selectedSchoolId = sessionStorage.getItem("adminSchoolId");
+      if (!selectedSchoolId || String(profile.id_colegio) !== selectedSchoolId) {
+        await client.auth.signOut();
+        sessionStorage.removeItem("adminSchoolId");
+        sessionStorage.removeItem("adminSchoolSlug");
+        return window.location.replace("../../index.html");
+      }
+      if (profile.requiereCambioContrasena) return window.location.replace(`cambiar-contrasena.html?colegio=${encodeURIComponent(sessionStorage.getItem("adminSchoolSlug") || "")}`);
       const name = [profile.nombres, profile.apellidos].filter(Boolean).join(" ") || session.user.email;
       putText("#userName", name);
       putText("#welcomeName", profile.nombres || "bienvenido");

@@ -1,8 +1,11 @@
 (() => {
   async function applySchoolBrand() {
     if (!window.supabase?.createClient || !window.SUPABASE_URL || !window.SUPABASE_PUBLISHABLE_KEY) return;
-    const client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
-    const schoolSlug = new URLSearchParams(window.location.search).get("colegio") || "san-pio-x-circa";
+    const client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const schoolSlug = new URLSearchParams(window.location.search).get("colegio");
+    if (!schoolSlug) return;
     const { data, error } = await client.rpc("obtener_identidad_publica_colegio", { p_colegio_slug: schoolSlug });
     if (error || !data) return;
     const name = data.nombre_colegio || "Mi Colegio";

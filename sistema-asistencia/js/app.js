@@ -9,7 +9,8 @@
   const message = document.querySelector("#mensaje");
   const studentCard = document.querySelector("#tarjetaEstudiante");
   let clearTimer;
-  const schoolSlug = new URLSearchParams(window.location.search).get("colegio") || "san-pio-x-circa";
+  const schoolSlug = new URLSearchParams(window.location.search).get("colegio") || "";
+  if (!schoolSlug) return;
 
   const clockOptions = { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false };
   const dateOptions = { timeZone: "America/Lima", weekday: "long", day: "numeric", month: "long", year: "numeric" };
@@ -63,6 +64,10 @@
   }
 
   async function register(code) {
+    if (!window.selectedSchool || window.selectedSchool.slug !== schoolSlug) {
+      showMessage("Selecciona un colegio válido antes de registrar asistencia.", "error");
+      return;
+    }
     if (!client) {
       showMessage("No se pudo iniciar la conexión. Revisa js/supabase-config.js y vuelve a cargar la página.", "error");
       return;

@@ -120,7 +120,7 @@ Deno.serve(async (request: Request) => {
     if (error || !school) return json({ error: "No se pudo actualizar el colegio." }, 500);
     return json({ ok: true, colegio: school });
   }
-  if (actorRole.nombre !== "DIRECTOR") return json({ error: "Solo un director puede gestionar cuentas del colegio." }, 403);
+  if (actorRole.nombre !== "DIRECTOR" || !actor.id_colegio) return json({ error: "Solo el director de un colegio activo puede gestionar sus cuentas." }, 403);
   if (body.action === "listar") {
     const { data: userList, error: listError } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listError) return json({ error: "No se pudo consultar la lista de cuentas." }, 500);

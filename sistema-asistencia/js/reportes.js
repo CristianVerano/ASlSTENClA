@@ -71,14 +71,59 @@
     const content = "\uFEFF" + lines.map((line) => line.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\r\n");
     const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" })); link.download = filename("csv"); link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
-  function exportXlsx() {
-    if (!window.XLSX) { setAlert("No se pudo cargar el generador Excel. Revisa tu conexión e inténtalo otra vez."); return; }
-    const meta = reportMeta(); const workbook = XLSX.utils.book_new();
-    const summary = [[schoolName], ["REPORTE DE ASISTENCIA"], ["Periodo", meta.start, "al", meta.end], ["Grado", meta.grade, "Sección", meta.section, "Estado", meta.state], [], ["RESUMEN GENERAL"], ["Indicador", "Cantidad"], ["Registros", shownRows.length], ["Presentes", meta.totals.PRESENTE || 0], ["Tardanzas", meta.totals.TARDANZA || 0], ["Faltas registradas", meta.totals.FALTA || 0], [], ["RESUMEN POR GRADO Y SECCIÓN"], ["Grado", "Sección", "Registros", "Presentes", "Tardanzas", "Faltas", "% a tiempo"], ...groups.map((group) => [group.grade, group.section, group.total, group.PRESENTE, group.TARDANZA, group.FALTA, group.total ? `${Math.round(group.PRESENTE / group.total * 100)}%` : "0%"] )];
-    const detail = [["Fecha", "Código", "Apellidos", "Nombres", "Grado", "Sección", "Hora", "Estado", "Observación"], ...shownRows.map((row) => { const { student, section, grade } = getRelations(row); return [row.fecha, student?.codigo || "", student?.apellidos || "", student?.nombres || "", grade?.nombre || "Sin grado", section?.nombre || "Sin sección", row.hora_ingreso?.slice(0, 5) || "", row.estado, row.observacion || ""]; })];
-    const summarySheet = XLSX.utils.aoa_to_sheet(summary); summarySheet["!cols"] = [{ wch: 24 }, { wch: 19 }, { wch: 14 }, { wch: 19 }, { wch: 14 }, { wch: 18 }, { wch: 17 }];
-    const detailSheet = XLSX.utils.aoa_to_sheet(detail); detailSheet["!cols"] = [{ wch: 14 }, { wch: 15 }, { wch: 24 }, { wch: 24 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 40 }]; detailSheet["!autofilter"] = { ref: `A1:I${Math.max(1, detail.length)}` }; detailSheet["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft", state: "frozen" };
-    XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen"); XLSX.utils.book_append_sheet(workbook, detailSheet, "Detalle"); XLSX.writeFile(workbook, filename("xlsx"));
+  async function exportXlsx() {
+    if (!window.ExcelJS) { setAlert("No se pudo cargar el generador Excel. Revisa tu conexión e inténtalo otra vez."); return; }
+    const meta = reportMeta(); const workbook = new ExcelJS.Workbook();
+    workbook.creator = schoolName; workbook.created = new Date(); workbook.modified = new Date();
+    const green = "287E68"; const dark = "173C32"; const pale = "EAF3EF"; const line = "DCE7E1"; const white = "FFFFFF";
+    const summarySheet = workbook.addWorksheet("Resumen", { views: [{ showGridLines: false }] });
+    summarySheet.columns = [{ width: 22 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 17 }];
+    summarySheet.mergeCells("A1:G1"); summarySheet.getCell("A1").value = schoolName;
+    summarySheet.getCell("A1").font = { name: "Aptos Display", size: 17, bold: true, color: { argb: white } };
+    summarySheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: dark } }; summarySheet.getRow(1).height = 32;
+    summarySheet.mergeCells("A2:G2"); summarySheet.getCell("A2").value = "Reporte de asistencia";
+    summarySheet.getCell("A2").font = { name: "Aptos", size: 13, bold: true, color: { argb: dark } }; summarySheet.getRow(2).height = 25;
+    summarySheet.mergeCells("A3:G3"); summarySheet.getCell("A3").value = `Periodo: ${meta.start} al ${meta.end}  ·  Generado: ${new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Lima" }).format(new Date())}`;
+    summarySheet.getCell("A3").font = { name: "Aptos", size: 10, color: { argb: "5E7068" } }; summarySheet.getRow(3).height = 20;
+    [["A5", "B5"], ["C5", "D5"], ["E5", "F5"]].forEach(([start, end]) => summarySheet.mergeCells(`${start}:${end}`));
+    [["A6", "B6"], ["C6", "D6"], ["E6", "F6"]].forEach(([start, end]) => summarySheet.mergeCells(`${start}:${end}`));
+    [["A5", "REGISTROS", shownRows.length], ["C5", "PRESENTES", meta.totals.PRESENTE || 0], ["E5", "TARDANZAS", meta.totals.TARDANZA || 0], ["G5", "FALTAS", meta.totals.FALTA || 0]].forEach(([cell, label, value]) => {
+      const column = cell[0]; const labelCell = summarySheet.getCell(cell); labelCell.value = label; labelCell.alignment = { horizontal: "center" };
+      labelCell.font = { name: "Aptos", size: 9, bold: true, color: { argb: white } }; labelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: green } };
+      const valueCell = summarySheet.getCell(`${column}6`); valueCell.value = value; valueCell.alignment = { horizontal: "center", vertical: "middle" };
+      valueCell.font = { name: "Aptos Display", size: 20, bold: true, color: { argb: dark } }; valueCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: pale } };
+      if (column !== "G") { const next = String.fromCharCode(column.charCodeAt(0) + 1); summarySheet.getCell(`${next}5`).fill = labelCell.fill; summarySheet.getCell(`${next}6`).fill = valueCell.fill; }
+    });
+    summarySheet.getRow(5).height = 21; summarySheet.getRow(6).height = 36;
+    summarySheet.mergeCells("A8:G8"); summarySheet.getCell("A8").value = "Filtros aplicados"; summarySheet.getCell("A8").font = { name: "Aptos", size: 11, bold: true, color: { argb: dark } };
+    const filterRow = summarySheet.addRow(["Grado", meta.grade, "Sección", meta.section, "Estado", meta.state]);
+    filterRow.eachCell((cell, column) => { cell.border = { bottom: { style: "thin", color: line } }; cell.font = { name: "Aptos", size: 10, bold: column % 2 === 1, color: { argb: column % 2 === 1 ? dark : "41554C" } }; });
+    summarySheet.addRow([]); const sectionTitle = summarySheet.addRow(["Resumen por grado y sección"]); summarySheet.mergeCells(`A${sectionTitle.number}:G${sectionTitle.number}`); sectionTitle.getCell(1).font = { name: "Aptos", size: 11, bold: true, color: { argb: dark } };
+    const summaryHeader = summarySheet.addRow(["Grado", "Sección", "Registros", "Presentes", "Tardanzas", "Faltas", "% a tiempo"]);
+    summaryHeader.height = 23; summaryHeader.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: green } }; cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: white } }; cell.alignment = { vertical: "middle", horizontal: "center" }; });
+    groups.forEach((group, index) => {
+      const row = summarySheet.addRow([group.grade, group.section, group.total, group.PRESENTE, group.TARDANZA, group.FALTA, group.total ? group.PRESENTE / group.total : 0]);
+      row.getCell(7).numFmt = "0%"; row.eachCell((cell, column) => { cell.font = { name: "Aptos", size: 10, color: { argb: dark } }; cell.border = { bottom: { style: "hair", color: line } }; if (index % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F5F8F6" } }; if (column > 2) cell.alignment = { horizontal: "center" }; });
+    });
+    summarySheet.views = [{ state: "frozen", ySplit: summaryHeader.number, topLeftCell: `A${summaryHeader.number + 1}`, showGridLines: false }];
+    summarySheet.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+
+    const detailSheet = workbook.addWorksheet("Detalle", { views: [{ state: "frozen", ySplit: 1, showGridLines: false }] });
+    detailSheet.columns = [{ header: "Fecha", key: "fecha", width: 15 }, { header: "Código", key: "codigo", width: 15 }, { header: "Apellidos", key: "apellidos", width: 25 }, { header: "Nombres", key: "nombres", width: 25 }, { header: "Grado", key: "grado", width: 17 }, { header: "Sección", key: "seccion", width: 13 }, { header: "Hora", key: "hora", width: 11 }, { header: "Estado", key: "estado", width: 16 }, { header: "Observación", key: "observacion", width: 40 }];
+    detailSheet.autoFilter = { from: "A1", to: "I1" }; detailSheet.getRow(1).height = 25;
+    detailSheet.getRow(1).eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: green } }; cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: white } }; cell.alignment = { vertical: "middle", horizontal: "center" }; });
+    shownRows.forEach((record, index) => {
+      const { student, section, grade } = getRelations(record);
+      const row = detailSheet.addRow({ fecha: record.fecha ? new Date(`${record.fecha}T12:00:00`) : "", codigo: student?.codigo || "", apellidos: student?.apellidos || "", nombres: student?.nombres || "", grado: grade?.nombre || "Sin grado", seccion: section?.nombre || "Sin sección", hora: record.hora_ingreso?.slice(0, 5) || "", estado: record.estado, observacion: record.observacion || "" });
+      row.getCell(1).numFmt = "dd/mm/yyyy";
+      row.eachCell((cell) => { cell.font = { name: "Aptos", size: 10, color: { argb: dark } }; cell.border = { bottom: { style: "hair", color: line } }; if (index % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F5F8F6" } }; });
+      const state = row.getCell(8); const statusColors = { PRESENTE: ["E8F4E8", "2F6C3C"], TARDANZA: ["FFF3D9", "93610A"], FALTA: ["FCE9E7", "A13B2D"] }[record.estado];
+      if (statusColors) { state.fill = { type: "pattern", pattern: "solid", fgColor: { argb: statusColors[0] } }; state.font = { name: "Aptos", size: 10, bold: true, color: { argb: statusColors[1] } }; }
+    });
+    detailSheet.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename("xlsx"); link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   function exportPdf() {
     const JsPDF = window.jspdf?.jsPDF;
@@ -104,7 +149,7 @@
     if (params.get("estado")) byId("reportState").value = params.get("estado");
   }
   const todayDate = today(); byId("reportTo").value = todayDate; byId("reportFrom").value = `${todayDate.slice(0, 7)}-01`;
-  byId("generateReport").addEventListener("click", generate); byId("exportCsv").addEventListener("click", exportCsv); byId("exportXlsx").addEventListener("click", exportXlsx); byId("exportPdf").addEventListener("click", exportPdf);
+  byId("generateReport").addEventListener("click", generate); byId("exportCsv").addEventListener("click", exportCsv); byId("exportXlsx").addEventListener("click", () => exportXlsx().catch((error) => { console.error("No se pudo preparar el archivo Excel:", error); setAlert("No se pudo preparar el Excel. Intenta exportar el reporte nuevamente."); })); byId("exportPdf").addEventListener("click", exportPdf);
   byId("reportGrade").addEventListener("change", async () => { try { await loadSections(); await generate(); } catch (error) { console.error(error); setAlert("No se pudieron cargar las secciones."); } });
   byId("reportSection").addEventListener("change", generate); byId("reportState").addEventListener("change", generate);
   window.moduleReady.then(async (context) => { if (!context) return; app = context; try { await Promise.all([loadSchool(), loadGrades()]); await applyUrlFilters(); await generate(); } catch (error) { console.error(error); setAlert("No se pudo inicializar el reporte."); } });

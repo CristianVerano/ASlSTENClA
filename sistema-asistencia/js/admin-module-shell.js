@@ -46,6 +46,15 @@
     try { profile = await getAuthorizedProfile(session.user.id); }
     catch { window.location.replace(loginPath()); return null; }
     if (!profile) { await client.auth.signOut(); window.location.replace(loginPath()); return null; }
+    if (profile.role === "SUPERADMIN") { window.location.replace("../superadmin/login.html"); return null; }
+    const selectedSchoolId = sessionStorage.getItem("adminSchoolId");
+    if (!selectedSchoolId || String(profile.id_colegio) !== selectedSchoolId) {
+      await client.auth.signOut();
+      sessionStorage.removeItem("adminSchoolId");
+      sessionStorage.removeItem("adminSchoolSlug");
+      window.location.replace("../../index.html");
+      return null;
+    }
     if (profile.requiereCambioContrasena && currentPage !== "cambiar-contrasena") { window.location.replace("cambiar-contrasena.html"); return null; }
     const allowed = (document.body.dataset.allowedRoles || "DIRECTOR").split(",").map((role) => role.trim());
     if (!allowed.includes(profile.role)) {
