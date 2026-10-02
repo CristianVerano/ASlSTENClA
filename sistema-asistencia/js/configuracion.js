@@ -54,8 +54,16 @@
     if (error) throw error; scheduleRow = data; if (!data) return;
     byId("scheduleId").value = data.id_configuracion; byId("startTime").value = data.hora_inicio.slice(0, 5); byId("lateTime").value = data.hora_tardanza.slice(0, 5);
     byId("closeTime").value = data.hora_cierre.slice(0, 5); byId("absenceTime").value = data.hora_falta.slice(0, 5);
+    byId("closureMode").value = data.modo_cierre_faltas || "MANUAL"; byId("closureTime").value = (data.hora_cierre_faltas || data.hora_falta).slice(0, 5); updateClosureControls();
     const activeDays = data.dias_laborables || [1, 2, 3, 4, 5]; const options = byId("workdayOptions");
     options.replaceChildren(...weekDays.map((day) => { const label = document.createElement("label"); label.className = "workday-option"; const input = document.createElement("input"); input.type = "checkbox"; input.name = "workday"; input.value = day.value; input.checked = activeDays.includes(day.value); const text = document.createElement("span"); text.textContent = day.label; label.append(input, text); return label; }));
+  }
+  function updateClosureControls() {
+    const automatic = byId("closureMode").value === "AUTOMATICO";
+    byId("closureTimeField").hidden = !automatic;
+    byId("closureTime").required = automatic;
+    byId("closeAttendanceNow").hidden = automatic;
+    byId("closureHelp").textContent = automatic ? "El sistema cerrará la asistencia automáticamente a la hora elegida, solo en días con clases." : "El cierre manual está disponible cuando el colegio termina sus labores.";
   }
   async function loadHolidays() {
     const { data, error } = await app.client.from("dias_no_laborables").select("id_dia,fecha,motivo,activo").order("fecha", { ascending: false });
@@ -88,6 +96,21 @@
     const values = { hora_inicio: byId("startTime").value, hora_tardanza: byId("lateTime").value, hora_cierre: byId("closeTime").value, hora_falta: byId("absenceTime").value, activo: true, fecha_actualizacion: new Date().toISOString() };
     try { const { error } = await app.client.from("configuracion_asistencia").update(values).eq("id_configuracion", scheduleRow.id_configuracion); if (error) throw error; await app.logAction("ACTUALIZAR_HORARIO_ASISTENCIA", `${values.hora_inicio} · tardanza ${values.hora_tardanza} · cierre ${values.hora_cierre} · falta ${values.hora_falta}`); show("Horarios de asistencia actualizados."); }
     catch (error) { console.error(error); show("No se guardaron los horarios. Verifica que inicio < tardanza ≤ cierre ≤ falta.", "error"); }
+    finally { button.disabled = false; }
+  });
+  byId("closureMode").addEventListener("change", updateClosureControls);
+  byId("closureForm").addEventListener("submit", async (event) => {
+    event.preventDefault(); const button = byId("saveClosure"); button.disabled = true;
+    const values = { modo_cierre_faltas: byId("closureMode").value, hora_cierre_faltas: byId("closureTime").value || byId("absenceTime").value, fecha_actualizacion: new Date().toISOString() };
+    try { const { error } = await app.client.from("configuracion_asistencia").update(values).eq("id_configuracion", scheduleRow.id_configuracion); if (error) throw error; Object.assign(scheduleRow, values); await app.logAction("ACTUALIZAR_CIERRE_ASISTENCIA", `${values.modo_cierre_faltas} · ${values.hora_cierre_faltas}`); show("Preferencia de cierre guardada."); }
+    catch (error) { console.error(error); show("No se pudo guardar el modo de cierre.", "error"); }
+    finally { button.disabled = false; }
+  });
+  byId("closeAttendanceNow").addEventListener("click", async () => {
+    const button = byId("closeAttendanceNow"); if (!confirm("¿Cerrar la asistencia de hoy y marcar como FALTA a quienes no registraron ingreso?")) return;
+    button.disabled = true;
+    try { const { data, error } = await app.client.rpc("cerrar_asistencia_manual_hoy"); if (error) throw error; await app.logAction("CIERRE_MANUAL_ASISTENCIA", `Faltas registradas: ${data || 0}`); show(`Cierre realizado. Se registraron ${data || 0} faltas.`); }
+    catch (error) { console.error(error); show("No se pudo cerrar la asistencia. Confirma que hoy sea laborable y vuelve a intentarlo.", "error"); }
     finally { button.disabled = false; }
   });
   byId("workdaysForm").addEventListener("submit", async (event) => {

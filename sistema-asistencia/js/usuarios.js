@@ -22,6 +22,17 @@
     const select = byId("profileRole"); select.replaceChildren(new Option("Selecciona un rol", "")); roles.filter((role) => ["ADMINISTRADOR", "AUXILIAR"].includes(role.nombre)).forEach((role) => select.add(new Option(role.nombre, role.id_rol)));
     render();
   }
+  async function confirmAccountWasCreated(email, existedBefore) {
+    if (existedBefore) return false;
+    try {
+      const { data, error } = await app.client.functions.invoke("invitar-usuario-admin", { body: { action: "listar" } });
+      if (error) return false;
+      const account = (data?.emails || []).find((user) => user.email?.toLocaleLowerCase("es") === email.toLocaleLowerCase("es"));
+      if (!account) return false;
+      const { data: profile, error: profileError } = await app.client.from("perfiles").select("id_usuario").eq("id_usuario", account.id).maybeSingle();
+      return !profileError && Boolean(profile);
+    } catch { return false; }
+  }
   function render() {
     const rows = byId("profileRows"); rows.replaceChildren();
     if (!profiles.length) { const tr = document.createElement("tr"); const td = document.createElement("td"); td.colSpan = 6; td.className = "empty-cell"; td.textContent = "Todavía no hay perfiles de acceso."; tr.append(td); rows.append(tr); return; }
@@ -47,16 +58,19 @@
     const record = { email: byId("profileEmail").value.trim(), id_rol: Number(byId("profileRole").value), nombres: byId("profileNames").value.trim(), apellidos: byId("profileLastNames").value.trim(), password: byId("profilePassword").value };
     if (record.password !== byId("profilePasswordConfirm").value) { show(byId("profileFormAlert"), "Las contraseñas no coinciden.", "error"); button.disabled = false; return; }
     if (record.password.length < 12) { show(byId("profileFormAlert"), "La contraseña inicial debe tener al menos 12 caracteres.", "error"); button.disabled = false; return; }
+    const existedBefore = [...authUsers.values()].some((user) => user.email?.toLocaleLowerCase("es") === record.email.toLocaleLowerCase("es"));
     try {
       const { data, error } = await app.client.functions.invoke("invitar-usuario-admin", { body: { action: "crear", ...record } });
       if (error) {
         let detail = data?.error;
         try { detail ||= (await error.context?.clone().json())?.error; } catch { /* La respuesta puede no contener JSON. */ }
-        throw new Error(friendlyAccountError(detail || error.message));
+        if (!(await confirmAccountWasCreated(record.email, existedBefore))) throw new Error(friendlyAccountError(detail || error.message));
       }
-      if (data?.error) throw new Error(friendlyAccountError(data.error));
+      if (data?.error && !(await confirmAccountWasCreated(record.email, existedBefore))) throw new Error(friendlyAccountError(data.error));
       await app.logAction("CREAR_CUENTA_USUARIO", `${record.email} · ${record.nombres} ${record.apellidos} · ${roles.find((role) => role.id_rol === record.id_rol)?.nombre}`);
-      byId("profileDialog").close(); show(byId("profilesAlert"), `Cuenta creada para ${record.email}. Entrega la contraseña temporal por un canal privado.`); await loadData();
+      byId("profileDialog").close(); show(byId("profilesAlert"), `Cuenta creada para ${record.email}. Entrega la contraseña temporal por un canal privado.`);
+      try { await loadData(); }
+      catch (refreshError) { console.warn("La cuenta quedó creada, pero la lista no se actualizó:", refreshError); show(byId("profilesAlert"), `La cuenta sí se creó para ${record.email}, pero la lista no se pudo actualizar. Recarga la página para verla.`, "success"); }
     } catch (error) { console.error(error); show(byId("profileFormAlert"), friendlyAccountError(error.message), "error"); }
     finally { button.disabled = false; }
   });

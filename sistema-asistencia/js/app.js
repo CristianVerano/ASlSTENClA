@@ -93,6 +93,7 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (form.elements.website?.value) return;
     const code = codeInput.value.trim();
     if (!code) {
       codeInput.focus();

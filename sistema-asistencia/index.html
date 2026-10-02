@@ -4,15 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#102b25">
-  <title>Control de asistencia | Colegio</title>
+  <meta name="description" content="Registra la asistencia escolar de forma rápida y segura. Selecciona tu colegio e ingresa el código del estudiante.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_PE">
+  <meta property="og:site_name" content="Control de asistencia escolar">
+  <meta property="og:title" content="Control de asistencia escolar">
+  <meta property="og:description" content="Registra la asistencia escolar de forma rápida y segura.">
+  <meta property="og:url" content="">
+  <meta name="twitter:card" content="summary">
+  <title>Control de asistencia escolar | Mi Colegio</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="preconnect" href="https://frzrwzltfxvdehtjrcum.supabase.co" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/school-picker.css">
+  <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Control de asistencia escolar","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":"es-PE","description":"Sistema web para registrar y consultar la asistencia de estudiantes por colegio."}
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
+  <script src="js/seo.js" defer></script>
   <script src="js/school-picker.js" defer></script>
   <script src="js/school-brand.js" defer></script>
   <script src="js/app.js" defer></script>
@@ -52,6 +68,7 @@
 
       <section class="checkin-card" aria-label="Registro de asistencia">
         <form id="formulario" class="checkin-form" autocomplete="off">
+          <div class="form-trap" aria-hidden="true"><label for="website">Deja este campo vacío</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
           <label for="codigo">Código de estudiante</label>
           <div class="input-row">
             <span class="hash" aria-hidden="true">#</span>
@@ -84,7 +101,7 @@
       </section>
     </main>
 
-    <footer class="footer"><span>Un espacio para aprender y crecer.</span><span class="footer-actions"><a href="pages/superadmin/login.html">Central administrativa</a><span>© <span id="anio"></span> <span id="nombreColegioFooter">Mi Colegio</span></span></span></footer>
+    <footer class="footer"><span>Un espacio para aprender y crecer.</span><span class="footer-actions"><a id="contactWhatsapp" href="#" target="_blank" rel="noopener noreferrer" hidden>WhatsApp del colegio</a><a href="pages/legal/aviso-legal.html" data-school-link>Aviso legal</a><a href="pages/legal/privacidad.html" data-school-link>Privacidad</a><a href="pages/legal/cookies.html" data-school-link>Cookies</a><a href="pages/superadmin/login.html">Central administrativa</a><span>© <span id="anio"></span> <span id="nombreColegioFooter">Mi Colegio</span></span></span></footer>
   </div>
 </body>
 </html>

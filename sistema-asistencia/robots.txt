@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /pages/admin/
+Disallow: /pages/superadmin/
+Sitemap: /sitemap.xml

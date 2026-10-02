@@ -4,3 +4,13 @@
 @media(max-width:700px){.workday-options{grid-template-columns:repeat(2,minmax(0,1fr))}.week-controls{margin-top:10px}.weekly-card .panel-heading{display:block}.summary-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-filters{flex-direction:row;flex-wrap:wrap}.summary-filters label{flex:1}.summary-filters select{height:34px}}
 .summary-details{display:flex;flex-wrap:wrap;gap:6px 13px;margin-top:8px;color:#7b8a81;font-size:9px}.summary-details a{color:#287e68;font-weight:700;text-decoration:none}
 .report-detail{margin-top:12px}.report-detail .module-table-wrap{max-height:560px;overflow:auto}.report-detail .module-table{min-width:760px}.theme-picker-section{margin-bottom:12px}
+#closureTimeField[hidden],#closeAttendanceNow[hidden]{display:none}
+@keyframes content-arrive{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.module-content>.module-heading,.module-content>.module-alert,.module-content>.module-stat-grid,.module-content>.module-card,.module-content>section{animation:content-arrive .42s cubic-bezier(.2,.7,.25,1) both}
+.module-content>:nth-child(2){animation-delay:.035s}.module-content>:nth-child(3){animation-delay:.07s}.module-content>:nth-child(4){animation-delay:.105s}
+.module-card{transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.module-card:hover{border-color:#dce8de;box-shadow:0 8px 22px #1e49370e;transform:translateY(-1px)}
+.module-button,.row-action,.nav-item,.attendance-mark{transition:transform .16s ease,background-color .16s ease,box-shadow .16s ease,color .16s ease}.module-button:active,.row-action:active{transform:scale(.97)}
+.module-stat{transition:transform .2s ease,box-shadow .2s ease}.module-stat:hover{transform:translateY(-2px);box-shadow:0 8px 20px #1e493710}
+.module-dialog[open]{animation:content-arrive .24s ease both}.module-dialog::backdrop{animation:backdrop-arrive .2s ease both}@keyframes backdrop-arrive{from{opacity:0}to{opacity:1}}
+.module-table tbody tr{transition:background-color .15s ease}.module-table tbody tr:hover{background:#f8fbf8}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}

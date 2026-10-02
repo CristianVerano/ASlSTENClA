@@ -5,6 +5,7 @@
   const pages = [
     ["dashboard", "Dashboard", "dashboard.html", "⌂", ["DIRECTOR", "ADMINISTRADOR", "AUXILIAR"]],
     ["estudiantes", "Estudiantes", "estudiantes.html", "♙", ["DIRECTOR", "ADMINISTRADOR"]],
+    ["asistencia-semanal", "Asistencia semanal", "asistencia-semanal.html", "▦", ["DIRECTOR", "ADMINISTRADOR", "AUXILIAR"]],
     ["asistencias", "Asistencias", "asistencias.html", "✓", ["DIRECTOR", "ADMINISTRADOR", "AUXILIAR"]],
     ["reportes", "Reportes", "reportes.html", "▥", ["DIRECTOR", "ADMINISTRADOR", "AUXILIAR"]],
     ["configuracion", "Configuración", "configuracion.html", "⚙", ["DIRECTOR"]],
